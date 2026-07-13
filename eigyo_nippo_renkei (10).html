@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>営業日報</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP','Hiragino Sans',sans-serif;background:#f4f7fb;color:#1a2b3c;font-size:13px;}
+.hdr{background:#1e3a5f;color:#fff;padding:0 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+.hdr-title{font-size:14px;font-weight:700;padding:12px 0;}
+.nav{display:flex;}
+.nv{background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;padding:12px 14px;white-space:nowrap;}
+.nv.on{color:#fff;border-bottom-color:#7eb8ff;}
+.page{display:none;}.page.on{display:block;}
+.datebar{display:flex;align-items:center;gap:6px;background:#fff;border-bottom:0.5px solid #d0d9e8;padding:8px 14px;overflow-x:auto;flex-wrap:wrap;}
+.dlbl{font-size:11px;color:#6b7a8d;white-space:nowrap;}
+.dtab{background:none;border:0.5px solid #d0d9e8;border-radius:6px;color:#6b7a8d;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;padding:4px 12px;white-space:nowrap;}
+.dtab.on{background:#3b7dd8;border-color:#3b7dd8;color:#fff;}
+.tabs{display:flex;background:#fff;border-bottom:0.5px solid #d0d9e8;padding:0 12px;overflow-x:auto;}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:#6b7a8d;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;padding:10px 12px;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.tab.on{color:#3b7dd8;border-bottom-color:#3b7dd8;}
+.bdg{background:#ddeeff;color:#1e5a9e;border-radius:10px;font-size:10px;font-weight:500;padding:1px 6px;}
+.tab.on .bdg{background:#3b7dd8;color:#fff;}
+.tbl-wrap{overflow-x:auto;background:#fff;}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+col.c0{width:32px;}col.c1{width:68px;}col.c2{min-width:150px;}col.c3{width:118px;}col.c4{width:86px;}col.c5{width:auto;}
+thead th{background:#2d5986;color:#fff;font-size:11px;font-weight:500;padding:7px 6px;text-align:left;}
+thead th.c{text-align:center;}
+tbody tr:nth-child(even){background:#edf3fc;}
+tbody tr:nth-child(odd){background:#fff;}
+td{padding:2px 3px;border-bottom:0.5px solid #d0d9e8;vertical-align:middle;}
+td.nc{text-align:center;color:#9ba8b5;font-size:11px;}
+td input{width:100%;background:transparent;border:0.5px solid transparent;border-radius:4px;color:#1a2b3c;font-family:inherit;font-size:11px;padding:3px 5px;outline:none;}
+td input:focus{background:#fff;border-color:#3b7dd8;}
+td select{width:100%;background:transparent;border:0.5px solid transparent;border-radius:4px;font-family:inherit;font-size:11px;padding:3px 2px;outline:none;cursor:pointer;-webkit-appearance:none;color:#1a2b3c;}
+td select:focus{background:#fff;border-color:#3b7dd8;}
+td select.ph{color:#9ba8b5;}
+tfoot td{background:#1e3a5f;color:#f5d97a;font-weight:500;padding:7px 10px;}
+.tfoot-l{text-align:right;font-size:12px;}.tfoot-c{text-align:center;font-size:14px;}
+.foot{background:#fff;border-top:0.5px solid #d0d9e8;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn{border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;padding:6px 12px;border:0.5px solid #d0d9e8;background:transparent;color:#6b7a8d;}
+.btn-o{background:#fff;border:0.5px solid #3b7dd8;color:#3b7dd8;}
+.btn-p{background:#3b7dd8;border:none;color:#fff;padding:7px 16px;}
+.st{font-size:11px;color:#166534;}
+.sum{margin:12px 14px 14px;background:#fff;border:0.5px solid #d0d9e8;border-radius:10px;padding:12px 14px;}
+.sum-t{font-size:11px;color:#6b7a8d;margin-bottom:8px;}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;}
+.si{background:#edf3fc;border-radius:6px;padding:10px;text-align:center;}
+.sn{font-size:11px;color:#6b7a8d;margin-bottom:2px;}.sv{font-size:20px;font-weight:700;color:#1a2b3c;}.su{font-size:10px;color:#9ba8b5;margin-top:2px;}
+.sw{padding:14px;}
+.sc{background:#fff;border:0.5px solid #d0d9e8;border-radius:10px;padding:14px;margin-bottom:12px;}
+.sh{font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid #d0d9e8;}
+.frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.flbl{font-size:11px;color:#6b7a8d;}
+.fsel{border:0.5px solid #d0d9e8;border-radius:6px;font-family:inherit;font-size:12px;padding:4px 8px;color:#1a2b3c;outline:none;background:#fff;}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;}
+.kpi{background:#edf3fc;border-radius:8px;padding:12px;text-align:center;}
+.kl{font-size:11px;color:#6b7a8d;margin-bottom:4px;}.kv{font-size:22px;font-weight:700;color:#1a2b3c;}.ku{font-size:10px;color:#9ba8b5;margin-top:2px;}
+.br{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.bl{width:100px;text-align:right;color:#6b7a8d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;font-size:11px;}
+.bt{flex:1;background:#d0d9e8;border-radius:3px;height:14px;overflow:hidden;}
+.bf{height:100%;border-radius:3px;background:#3b7dd8;}
+.bc{width:28px;text-align:right;color:#1a2b3c;font-weight:500;flex-shrink:0;font-size:12px;}
+.stbl{width:100%;border-collapse:collapse;font-size:12px;}
+.sth{background:#2d5986;color:#fff;font-size:11px;font-weight:500;padding:7px 8px;text-align:left;}
+.sth.r{text-align:right;}
+.std{padding:5px 8px;border-bottom:0.5px solid #d0d9e8;color:#1a2b3c;}
+.std.r{text-align:right;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-title">📋 営業日報</div>
+  <div class="nav">
+    <button class="nv on" onclick="swPage('report',this)">日報入力</button>
+    <button class="nv" onclick="swPage('stat',this)">統計・分析</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap;">
+    <span id="sync-status" style="font-size:11px;color:#888;"></span>
+    <button class="btn btn-o" style="font-size:11px;padding:6px 10px;" onclick="reloadFromSheet()">🔄 読込</button>
+    <button class="btn btn-p" style="font-size:11px;padding:6px 10px;" onclick="saveToSheet()">☁ 保存</button>
+  </div>
+</div>
+<div id="page-report" class="page on">
+  <div class="datebar"><span class="dlbl">月</span><div id="mtabs"></div></div>
+  <div class="datebar"><span class="dlbl">日付</span><div id="dtabs"></div><button class="btn btn-o" style="font-size:11px;padding:4px 10px;margin-left:8px;" onclick="addNewDate()">＋ 日付追加</button></div>
+  <div class="tabs" id="shtabs"></div>
+  <div class="tbl-wrap">
+    <table>
+      <colgroup><col class="c0"><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup>
+      <thead><tr><th class="c">No.</th><th>営業担当</th><th>事業所名</th><th>種類</th><th>行政区</th><th>備考</th></tr></thead>
+      <tbody id="tbody"></tbody>
+      <tfoot><tr><td colspan="4" class="tfoot-l">合　計</td><td colspan="2" class="tfoot-c" id="tot">0 件</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="foot">
+    <button class="btn btn-p" onclick="openBulk()">📝 一括入力</button>
+    <button class="btn" onclick="clearSheet()">クリア</button>
+    <button class="btn btn-o" onclick="copyTxt()">📋 コピー</button>
+    <button class="btn btn-p" onclick="exportCSV()">📥 CSV</button>
+    <span class="st" id="st"></span>
+  </div>
+  <div class="sum"><div class="sum-t">全担当　件数サマリー</div><div class="sg" id="sg"></div></div>
+  <div class="sum" style="margin-top:12px;">
+    <div class="sum-t" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>営業担当の管理</span>
+      <button class="btn btn-o" style="font-size:11px;padding:4px 10px;" onclick="addStaff()">＋ 担当を追加</button>
+    </div>
+    <div id="staff-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+    <div style="font-size:11px;color:#888;margin-top:8px;">担当を追加・削除したら「保存」を押すと全員に反映されます。削除しても過去の記録は残ります。</div>
+  </div>
+</div>
+
+<!-- 一括入力モーダル -->
+<div id="bulk-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:12px;padding:1.5rem;width:560px;max-width:96vw;max-height:90vh;overflow-y:auto;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:14px;">📝 一括入力</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px;">日付</label>
+        <select id="bulk-date" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px;">担当</label>
+        <select id="bulk-staff" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;"></select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px;">種類（全行に適用・後で個別変更可）</label>
+        <input id="bulk-shu" list="bulk-shu-list" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;" placeholder="例：居宅介護支援">
+        <datalist id="bulk-shu-list">
+          <option>居宅介護支援</option><option>医療機関</option><option>地域包括支援センター</option>
+          <option>小規模多機能型</option><option>介護老人保健施設</option><option>その他</option>
+        </datalist>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px;">行政区・地域（全行に適用）</label>
+        <input id="bulk-area" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;" placeholder="例：右京区">
+      </div>
+    </div>
+    <div style="margin-bottom:6px;">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:4px;">事業所名（1行に1件ずつ）または ■区切りの活動記録を貼り付け</label>
+      <textarea id="bulk-text" style="width:100%;height:140px;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px;font-family:inherit;resize:vertical;" placeholder="【1行モード】&#10;○○居宅介護支援事業所&#10;△△クリニック&#10;&#10;【文章モード】&#10;■ふれあいサポート西大津/～～～&#10;■わかば居宅/～～～"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn btn-o" style="font-size:12px;" onclick="parseSentence()">■文章を解析してプレビュー</button>
+      <span style="font-size:11px;color:#888;align-self:center;">「■」で区切られた文章から事業所名・種類・地域を自動判定します</span>
+    </div>
+    <div id="bulk-preview" style="display:none;margin-bottom:12px;">
+      <div style="font-size:12px;color:#0C447C;font-weight:600;margin-bottom:6px;">解析結果（種類・地域が違う場合はその場で直せます）</div>
+      <div style="max-height:240px;overflow-y:auto;border:1px solid #eee;border-radius:6px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#f5f5f3;">
+            <th style="padding:6px;text-align:left;border-bottom:1px solid #eee;">事業所名</th>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid #eee;width:30%;">種類</th>
+            <th style="padding:6px;text-align:left;border-bottom:1px solid #eee;width:22%;">地域</th>
+          </tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:6px;">備考には■以降の文章全体が入ります。この内容で追加するには下のボタンを押してください。</div>
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;">
+      1行モードでは、タブ区切りで「事業所名（タブ）種類（タブ）行政区（タブ）備考」と貼れば各列も一括で入ります。空欄の行は上の共通設定が使われます。
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn" onclick="closeBulk()">キャンセル</button>
+      <button class="btn btn-p" onclick="applyBulk()">この内容で追加</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-stat" class="page">
+  <div class="sw">
+    <div class="sc">
+      <div class="frow">
+        <span class="flbl">月：</span>
+        <select class="fsel" id="f-m" onchange="renderStat()"><option value="all">全期間</option><option value="5">5月</option><option value="6">6月</option></select>
+        <span class="flbl">担当：</span>
+        <select class="fsel" id="f-t" onchange="renderStat()"><option value="all">全員</option></select>
+        <button class="btn btn-p" style="margin-left:auto;font-size:11px;padding:6px 12px;" onclick="exportStatCSV()">📥 統計CSV出力</button>
+      </div>
+      <div class="kg" id="kpis"></div>
+    </div>
+    <div class="sc"><div class="sh">🗺 行政区別　訪問件数</div><div id="bar-g"></div></div>
+    <div class="sc"><div class="sh">🏢 事業所種類別　訪問件数</div><div id="bar-s"></div></div>
+    <div class="sc"><div class="sh">📅 担当別・日別　訪問件数</div><div style="overflow-x:auto"><table class="stbl" id="daily-tbl"></table></div></div>
+    <div class="sc">
+      <div class="sh">📋 訪問明細一覧 <span id="dcnt" style="font-size:11px;color:#6b7a8d;font-weight:400;"></span></div>
+      <div style="overflow-x:auto"><table class="stbl"><thead><tr><th class="sth">日付</th><th class="sth">担当</th><th class="sth">事業所名</th><th class="sth">種類</th><th class="sth">行政区</th><th class="sth">備考</th></tr></thead><tbody id="dbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<script>
+let SH=["安井","川上","春名","溝川","佐藤","瀧川","谷口","亀橋"]; // 営業担当（スプレッドシートのstaffシートで上書き） // 営業担当（スプレッドシートのstaffシートで上書き）
+const SHU=["","居宅介護支援","医療機関","介護老人保健施設","小規模多機能型居宅介護","地域包括支援センター","紹介業者"];
+const GYO=["","上京区","下京区","中京区","久世郡","亀岡市","京丹後市","京田辺市","伏見区","八幡市","北区","南区","右京区","向日市","城陽市","大津市","宇治市","守山市","山科区","左京区","東山区","栗東市","相良郡","福知山市","草津市","西京区","長岡京市"];
+const em=()=>({担当:"",事業所名:"",種類:"",行政区:"",備考:""});
+const p16=a=>{const r=[...a];while(r.length<16)r.push(em());return r;};
+const D={
+"7/1":{安井:p16([]),川上:p16([]),春名:p16([]),溝川:p16([]),佐藤:p16([]),瀧川:p16([]),谷口:p16([]),亀橋:p16([])}
+};
+const DATES=Object.keys(D);
+let curD="7/1",curS="安井";
+const cnt=(d,s)=>(D[d]?.[s]||[]).filter(r=>r.事業所名.trim()!=="").length;
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const opts=(arr,sel)=>arr.map(v=>`<option value="${esc(v)}"${v===sel?" selected":""}>${v||"—"}</option>`).join("");
+// 選択中の月（"7"のような文字列）。初期値は現在選択中の日付の月
+let curM = curD.split("/")[0];
+
+// 月タブ：データにある日付から月の一覧を作って表示
+function renderMonthTabs(){
+  const months=[...new Set(DATES.map(d=>d.split("/")[0]))];
+  // 年度順（4月始まり）で並べる
+  months.sort((a,b)=>{
+    const fa=(parseInt(a)+8)%12, fb=(parseInt(b)+8)%12; // 4月→0, 3月→11
+    return fa-fb;
+  });
+  if(!months.includes(curM)) curM=months[0]||curM;
+  document.getElementById("mtabs").innerHTML=months.map(m=>`<button class="dtab${m===curM?" on":""}" onclick="swM('${m}')">${m}月</button>`).join("");
+}
+function swM(m){
+  curM=m;
+  // その月の最初の日付を選択
+  const first=DATES.find(d=>d.split("/")[0]===m);
+  if(first) curD=first;
+  renderMonthTabs(); renderDateTabs(); renderShTabs(); renderTable(); renderSumm();
+}
+window.swM=swM;
+
+// 日付タブ：選択中の月の日付だけを表示
+function renderDateTabs(){
+  const monthDates=DATES.filter(d=>d.split("/")[0]===curM);
+  document.getElementById("dtabs").innerHTML=monthDates.map(d=>`<button class="dtab${d===curD?" on":""}" onclick="swD('${d}')">${d.split("/")[1]}日</button>`).join("");
+}
+function renderShTabs(){document.getElementById("shtabs").innerHTML=SH.map(s=>`<button class="tab${s===curS?" on":""}" onclick="swS('${s}')">${s}<span class="bdg">${cnt(curD,s)}</span></button>`).join("");}
+function renderTable(){
+  const rows=D[curD]?.[curS]||[];
+  document.getElementById("tbody").innerHTML=rows.map((r,i)=>`<tr><td class="nc">${i+1}</td><td><input value="${esc(r.担当)}" placeholder="—" data-r="${i}" data-f="担当" oninput="upd(this)"></td><td><input value="${esc(r.事業所名)}" placeholder="—" data-r="${i}" data-f="事業所名" oninput="upd(this)"></td><td><select data-r="${i}" data-f="種類" onchange="updS(this)" class="${r.種類?"":"ph"}">${opts(SHU,r.種類)}</select></td><td><select data-r="${i}" data-f="行政区" onchange="updS(this)" class="${r.行政区?"":"ph"}">${opts(GYO,r.行政区)}</select></td><td><input value="${esc(r.備考)}" placeholder="—" data-r="${i}" data-f="備考" oninput="upd(this)"></td></tr>`).join("");
+  document.getElementById("tot").textContent=cnt(curD,curS)+" 件";
+}
+function renderSumm(){document.getElementById("sg").innerHTML=SH.map(s=>`<div class="si"><div class="sn">${s}</div><div class="sv">${cnt(curD,s)}</div><div class="su">件</div></div>`).join("");}
+function renderAll(){renderMonthTabs();renderDateTabs();renderShTabs();renderTable();renderSumm();renderStaffList();}
+
+// ===== 営業担当の管理 =====
+function renderStaffList(){
+  // 統計ページの担当フィルタもSHから更新
+  const ft=document.getElementById('f-t');
+  if(ft){
+    const cur=ft.value;
+    ft.innerHTML='<option value="all">全員</option>'+SH.map(s=>'<option>'+s+'</option>').join('');
+    if([...ft.options].some(o=>o.value===cur)) ft.value=cur;
+  }
+  const el=document.getElementById('staff-list');
+  if(!el) return;
+  // 各担当の総件数（全日付）を数える
+  const countAll=(name)=>{
+    let c=0;
+    Object.keys(D).forEach(label=>{ (D[label][name]||[]).forEach(r=>{ if(r.事業所名&&r.事業所名.trim())c++; }); });
+    return c;
+  };
+  el.innerHTML=SH.map(s=>{
+    const n=countAll(s);
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #ddd;border-radius:16px;padding:4px 10px;font-size:12px;">'
+      +s+'<span style="color:#888;">'+n+'件</span>'
+      +'<span onclick="removeStaff(\''+s+'\')" style="cursor:pointer;color:#c00;font-weight:bold;" title="この担当を選択肢から外す">×</span></span>';
+  }).join('');
+}
+function addStaff(){
+  const name=prompt('追加する営業担当の名前を入力してください');
+  if(!name||!name.trim()) return;
+  const nm=name.trim();
+  if(SH.includes(nm)){ alert('その担当はすでに登録されています'); return; }
+  SH.push(nm);
+  // 既存の各日付にも空の担当枠を用意
+  Object.keys(D).forEach(label=>{ if(!D[label][nm]) D[label][nm]=p16([]); });
+  renderAll();
+  setSync('担当「'+nm+'」を追加しました（保存を忘れずに）');
+}
+function removeStaff(name){
+  // 過去データがあるか
+  let hasData=false;
+  Object.keys(D).forEach(label=>{ if((D[label][name]||[]).some(r=>r.事業所名&&r.事業所名.trim())) hasData=true; });
+  const msg=hasData
+    ? '「'+name+'」を担当の選択肢から外します。過去の記録は残り、集計にも表示されます。よろしいですか？'
+    : '「'+name+'」を担当の選択肢から外します。よろしいですか？';
+  if(!confirm(msg)) return;
+  SH=SH.filter(s=>s!==name);
+  if(curS===name) curS=SH[0]||'';
+  renderAll();
+  setSync('担当「'+name+'」を選択肢から外しました（保存を忘れずに）');
+}
+function upd(el){D[curD][curS][+el.dataset.r][el.dataset.f]=el.value;renderShTabs();renderSumm();document.getElementById("tot").textContent=cnt(curD,curS)+" 件";}
+function updS(el){D[curD][curS][+el.dataset.r][el.dataset.f]=el.value;el.className=el.value?"":"ph";renderShTabs();renderSumm();document.getElementById("tot").textContent=cnt(curD,curS)+" 件";}
+function swD(d){curD=d;curM=d.split('/')[0];renderAll();}
+function swS(s){curS=s;renderShTabs();renderTable();}
+function clearSheet(){if(!confirm("「"+curD+" "+curS+"」をクリアしますか？"))return;D[curD][curS]=p16([]);renderTable();renderShTabs();renderSumm();}
+function showSt(m){const e=document.getElementById("st");e.textContent=m;setTimeout(()=>e.textContent="",2500);}
+function copyTxt(){
+  const rs=D[curD][curS].filter(r=>r.事業所名.trim());
+  const lines=["営業日報 2026年"+curD+"【"+curS+"】","No.\t営業担当\t事業所名\t種類\t行政区\t備考"];
+  rs.forEach((r,i)=>lines.push((i+1)+"\t"+r.担当+"\t"+r.事業所名+"\t"+r.種類+"\t"+r.行政区+"\t"+r.備考));
+  lines.push("合計 "+rs.length+" 件");
+  navigator.clipboard.writeText(lines.join("\n")).then(()=>showSt("コピーしました")).catch(()=>showSt("失敗"));
+}
+function exportCSV(){
+  let csv="\uFEFF";
+  SH.forEach(s=>{
+    if(cnt(curD,s)===0)return;
+    csv+="【"+s+"】 2026年"+curD+"\nNo.,営業担当,事業所名,種類,行政区,備考\n";
+    D[curD][s].forEach((r,i)=>{if(r.事業所名.trim())csv+=(i+1)+',"'+r.担当+'","'+r.事業所名+'","'+r.種類+'","'+r.行政区+'","'+r.備考.replace(/"/g,'""')+'"\n';});
+    csv+="合計,"+cnt(curD,s)+"件\n\n";
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  a.download="営業日報_"+curD.replace("/","月")+"日.csv";
+  a.click();showSt("ダウンロードしました");
+}
+function swPage(p,btn){
+  document.getElementById("page-report").classList.toggle("on",p==="report");
+  document.getElementById("page-stat").classList.toggle("on",p==="stat");
+  document.querySelectorAll(".nv").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");if(p==="stat")renderStat();
+}
+function collectRows(){
+  const fm=document.getElementById("f-m").value,ft=document.getElementById("f-t").value,rows=[];
+  DATES.forEach(d=>{
+    if(fm!=="all"&&d.split("/")[0]!==fm)return;
+    SH.forEach(s=>{if(ft!=="all"&&s!==ft)return;(D[d]?.[s]||[]).forEach(r=>{if(r.事業所名.trim())rows.push({date:d,tanto:s,...r});});});
+  });
+  return rows;
+}
+function renderBar(id,obj,color){
+  const sorted=Object.entries(obj).sort((a,b)=>b[1]-a[1]),mx=sorted[0]?.[1]||1;
+  document.getElementById(id).innerHTML=sorted.map(([k,v])=>`<div class="br"><span class="bl">${k}</span><div class="bt"><div class="bf" style="width:${Math.round(v/mx*100)}%;${color?"background:"+color:""}"></div></div><span class="bc">${v}</span></div>`).join("");
+}
+function renderStat(){
+  const rows=collectRows(),days=new Set(rows.map(r=>r.date)).size;
+  document.getElementById("kpis").innerHTML=[{l:"総訪問件数",v:rows.length,u:"件"},{l:"訪問日数",v:days,u:"日"},{l:"1日平均",v:days>0?(rows.length/days).toFixed(1):0,u:"件/日"}].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv">${k.v}</div><div class="ku">${k.u}</div></div>`).join("");
+  const gc={},sc={};rows.forEach(r=>{const g=r.行政区||"未設定";gc[g]=(gc[g]||0)+1;const s=r.種類||"未設定";sc[s]=(sc[s]||0)+1;});
+  renderBar("bar-g",gc);renderBar("bar-s",sc,"#1d9e75");
+  const fm=document.getElementById("f-m").value,ft=document.getElementById("f-t").value;
+  const fD=DATES.filter(d=>fm==="all"||d.split("/")[0]===fm);
+  const tts=ft==="all"?SH:[ft];
+  let th="<thead><tr><th class='sth'>担当</th>"+fD.map(d=>`<th class='sth r'>${d}</th>`).join("")+"<th class='sth r'>合計</th></tr></thead><tbody>",tb="";
+  tts.forEach((s,ri)=>{
+    const total=fD.reduce((a,d)=>a+cnt(d,s),0);
+    if(total===0)return;
+    tb+=`<tr style="${ri%2===0?"background:#edf3fc":""}"><td class="std">${s}</td>`+fD.map(d=>`<td class="std r">${cnt(d,s)}</td>`).join("")+`<td class="std r" style="color:#3b7dd8;font-weight:500;">${total}</td></tr>`;
+  });
+  const grand=fD.reduce((a,d)=>a+tts.reduce((b,s)=>b+cnt(d,s),0),0);
+  tb+=`<tr style="background:#edf3fc;font-weight:500;"><td class="std">合計</td>`+fD.map(d=>`<td class="std r">${tts.reduce((a,s)=>a+cnt(d,s),0)}</td>`).join("")+`<td class="std r" style="color:#1e3a5f;font-weight:700;">${grand}</td></tr>`;
+  document.getElementById("daily-tbl").innerHTML=th+tb+"</tbody>";
+  document.getElementById("dcnt").textContent=rows.length+"件";
+  document.getElementById("dbody").innerHTML=rows.map((r,i)=>`<tr style="${i%2===0?"background:#edf3fc":""}"><td class="std">${r.date}</td><td class="std">${r.tanto}</td><td class="std">${r.事業所名}</td><td class="std">${r.種類}</td><td class="std">${r.行政区}</td><td class="std" style="font-size:11px;color:#6b7a8d;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.備考}</td></tr>`).join("");
+}
+function exportStatCSV(){
+  const rows=collectRows();
+  const fm=document.getElementById("f-m").value,ft=document.getElementById("f-t").value;
+  let csv="\uFEFF";
+  const mlabel=fm==="all"?"全期間":fm+"月";
+  const tlabel=ft==="all"?"全員":ft;
+  csv+="営業日報 統計データ,"+mlabel+","+tlabel+"\n\n";
+  const days=new Set(rows.map(r=>r.date)).size;
+  csv+="【集計サマリー】\n総訪問件数,"+rows.length+"件\n訪問日数,"+days+"日\n1日平均,"+(days>0?(rows.length/days).toFixed(1):0)+"件/日\n\n";
+  const gc={};rows.forEach(r=>{const g=r.行政区||"未設定";gc[g]=(gc[g]||0)+1;});
+  csv+="【行政区別】\n行政区,件数\n";
+  Object.entries(gc).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>csv+=k+","+v+"\n");
+  csv+="\n";
+  const sc={};rows.forEach(r=>{const s=r.種類||"未設定";sc[s]=(sc[s]||0)+1;});
+  csv+="【事業所種類別】\n種類,件数\n";
+  Object.entries(sc).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>csv+=k+","+v+"\n");
+  csv+="\n";
+  const fD=DATES.filter(d=>fm==="all"||d.split("/")[0]===fm);
+  const tts=ft==="all"?SH:[ft];
+  csv+="【担当別・日別】\n担当,"+fD.join(",")+",合計\n";
+  tts.forEach(s=>{
+    const total=fD.reduce((a,d)=>a+cnt(d,s),0);
+    if(total===0)return;
+    csv+=s+","+fD.map(d=>cnt(d,s)).join(",")+","+total+"\n";
+  });
+  const grand=fD.reduce((a,d)=>a+tts.reduce((b,s)=>b+cnt(d,s),0),0);
+  csv+="合計,"+fD.map(d=>tts.reduce((a,s)=>a+cnt(d,s),0)).join(",")+","+grand+"\n\n";
+  csv+="【訪問明細一覧】\n日付,担当,事業所名,種類,行政区,備考\n";
+  rows.forEach(r=>{csv+=r.date+',"'+r.tanto+'","'+r.事業所名+'","'+r.種類+'","'+r.行政区+'","'+(r.備考||"").replace(/"/g,'""')+'"\n';});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  a.download="営業日報_統計_"+mlabel+"_"+tlabel+".csv";
+  a.click();
+}
+
+// ===== スプレッドシート連携 =====
+// 営業日報用GASのウェブアプリURLを設定してください
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbycjhWyoxblFzICDubJkVzOQNSRT2rVN3_5aoxPipUR0YTHpJsTppW7Pt54-OuhaTfGhQ/exec';
+const _now2=new Date();
+const FISCAL_START_YEAR=(_now2.getMonth()+1)>=4?_now2.getFullYear():_now2.getFullYear()-1;
+
+function setSync(msg){ document.getElementById('sync-status').textContent=msg; }
+
+function labelToISO(label){
+  const [mo,da]=label.split('/').map(Number);
+  const y = mo>=4 ? FISCAL_START_YEAR : FISCAL_START_YEAR+1;
+  return y+'-'+String(mo).padStart(2,'0')+'-'+String(da).padStart(2,'0');
+}
+function isoToLabel(iso){
+  if(iso===null||iso===undefined) return iso;
+  // 日付オブジェクトが文字列化された形（例 2026-07-08T15:00:00.000Z）なら、
+  // 施設のローカル時刻に直してから月日を取り出す
+  const str=String(iso);
+  if(str.indexOf('T')>=0 || str.indexOf('Z')>=0){
+    const d=new Date(str);
+    if(!isNaN(d)) return (d.getMonth()+1)+'/'+d.getDate();
+  }
+  const p=str.split('-');
+  if(p.length<3) return iso;
+  return parseInt(p[1])+'/'+parseInt(p[2]);
+}
+
+function flattenD(){
+  const out=[];
+  Object.keys(D).forEach(label=>{
+    SH.forEach(s=>{
+      (D[label][s]||[]).forEach(r=>{
+        if(r.事業所名 && r.事業所名.trim()){
+          out.push({
+            id: r.__id || (Date.now()+Math.floor(Math.random()*1000000)),
+            date: labelToISO(label),
+            tanto: s,
+            jigyo: r.事業所名,
+            shu: r.種類||'',
+            area: r.行政区||'',
+            biko: r.備考||''
+          });
+        }
+      });
+    });
+  });
+  return out;
+}
+
+function rebuildD(records){
+  const newD={};
+  records.forEach(rec=>{
+    const label=isoToLabel(rec.date);
+    if(!newD[label]) { newD[label]={}; SH.forEach(s=>newD[label][s]=p16([])); }
+    if(!newD[label][rec.tanto]) newD[label][rec.tanto]=p16([]);
+    const arr=newD[label][rec.tanto];
+    let placed=false;
+    for(let i=0;i<arr.length;i++){
+      if(!arr[i].事業所名 || !arr[i].事業所名.trim()){
+        arr[i]={担当:rec.tanto,事業所名:rec.jigyo,種類:rec.shu,行政区:rec.area,備考:rec.biko,__id:rec.id};
+        placed=true; break;
+      }
+    }
+    if(!placed) arr.push({担当:rec.tanto,事業所名:rec.jigyo,種類:rec.shu,行政区:rec.area,備考:rec.biko,__id:rec.id});
+  });
+  Object.keys(newD).forEach(label=>{
+    SH.forEach(s=>{ if(!newD[label][s]) newD[label][s]=p16([]); else newD[label][s]=p16(newD[label][s]); });
+  });
+  return newD;
+}
+
+async function saveToSheet(){
+  if(GAS_URL==='PASTE_EIGYO_GAS_URL_HERE'){ alert('GASのURLが未設定です。手順書に従って設定してください。'); return; }
+  setSync('保存中...');
+  const records=flattenD();
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',visits:records,staff:SH})});
+    setSync('保存しました（'+records.length+'件）');
+  }catch(e){ setSync('保存に失敗しました'); }
+}
+
+async function reloadFromSheet(){
+  if(GAS_URL==='PASTE_EIGYO_GAS_URL_HERE'){ alert('GASのURLが未設定です。'); return; }
+  if(!confirm('スプレッドシートの内容を読み込みます。表示中の未保存の変更は失われます。よろしいですか？')) return;
+  setSync('読込中...');
+  try{
+    const res=await fetch(GAS_URL+'?action=list',{method:'GET'});
+    const data=await res.json();
+    // 職員リストを反映（過去データの担当も選択肢に含めて、記録が見えなくならないようにする）
+    if(Array.isArray(data.staff) && data.staff.length>0){
+      SH = mergeStaffWithData(data.staff);
+    }
+    const records=Array.isArray(data.visits)?data.visits:[];
+    if(records.length===0){ rebuildDates(); renderStaffList(); setSync('訪問データがありません（職員リストは反映）'); return; }
+    const newD=rebuildD(records);
+    Object.keys(D).forEach(k=>delete D[k]);
+    Object.keys(newD).forEach(k=>D[k]=newD[k]);
+    rebuildDates();
+    renderStaffList();
+    setSync('読込みました（'+records.length+'件）');
+  }catch(e){ setSync('読込に失敗しました'); }
+}
+
+// 登録職員リストに、過去データに登場する担当者を末尾に補う（記録を見えなくしないため）
+function mergeStaffWithData(staffList){
+  const set=new Set(staffList);
+  const merged=[...staffList];
+  Object.keys(D).forEach(label=>{
+    Object.keys(D[label]||{}).forEach(name=>{
+      const hasData=(D[label][name]||[]).some(r=>r.事業所名&&r.事業所名.trim());
+      if(hasData && !set.has(name)){ set.add(name); merged.push(name); }
+    });
+  });
+  return merged;
+}
+
+function rebuildDates(){
+  const keys=Object.keys(D).sort((a,b)=>{
+    const [am,ad]=a.split('/').map(Number), [bm,bd]=b.split('/').map(Number);
+    // 年度順（4月→翌3月）で並べる
+    const fa=(am+8)%12, fb=(bm+8)%12;
+    return fa!==fb?fa-fb:ad-bd;
+  });
+  DATES.length=0; keys.forEach(k=>DATES.push(k));
+  if(!DATES.includes(curD)) curD=DATES[DATES.length-1]||curD;
+  curM=curD.split('/')[0];
+  renderAll();
+}
+
+// ===== 一括入力 =====
+function openBulk(){
+  const dsel=document.getElementById('bulk-date');
+  dsel.innerHTML=DATES.map(d=>'<option'+(d===curD?' selected':'')+'>'+d+'</option>').join('');
+  const ssel=document.getElementById('bulk-staff');
+  ssel.innerHTML=SH.map(s=>'<option'+(s===curS?' selected':'')+'>'+s+'</option>').join('');
+  document.getElementById('bulk-shu').value='';
+  document.getElementById('bulk-area').value='';
+  document.getElementById('bulk-text').value='';
+  document.getElementById('bulk-overlay').style.display='flex';
+}
+function closeBulk(){ document.getElementById('bulk-overlay').style.display='none'; }
+window.openBulk=openBulk; window.closeBulk=closeBulk; window.applyBulk=applyBulk;
+
+// 解析した行を保持
+let parsedRows=[];
+
+// 種類の判定ルール。まず事業所名だけで判定し、なければ文章全体の手がかりを補助的に使う
+function guessShuFromName(name){
+  const t=name;
+  if(/包括/.test(t)) return '地域包括支援センター';
+  if(/小規模多機能/.test(t)) return '小規模多機能型';
+  if(/(病院|クリニック|医院|診療所)/.test(t)) return '医療機関';
+  if(/(老健|老人保健施設)/.test(t)) return '介護老人保健施設';
+  if(/(居宅|ケアプラン|ケアマネジメント|介護支援|サポート|ケアセンター)/.test(t)) return '居宅介護支援';
+  return '';
+}
+function guessShu(name, fullText){
+  // 事業所名からの判定を最優先
+  const byName=guessShuFromName(name);
+  if(byName) return byName;
+  // 事業所名で決まらないときだけ、文章中の明確な語を補助に使う（病院などは誤反応しやすいので除外）
+  if(/包括/.test(fullText)) return '地域包括支援センター';
+  if(/小規模多機能/.test(fullText)) return '小規模多機能型';
+  return '';
+}
+// 地域の判定（京都市の区・近隣市町・滋賀）
+const AREA_WORDS=['伏見区','東山区','下京区','南区','山科区','中京区','右京区','左京区','北区','上京区','西京区',
+  '宇治市','城陽市','長岡京市','向日市','八幡市','京田辺市','亀岡市','木津川市',
+  '大津市','草津市','守山市','栗東市','野洲市'];
+function guessArea(text){
+  for(const w of AREA_WORDS){ if(text.includes(w)) return w; }
+  // 「大津」「山科」など区市の語が末尾の「N件」表記にある場合の簡易補完
+  const m=text.match(/(伏見|東山|下京|山科|右京|左京|中京|西京|大津|草津|宇治)(?!区|市)/);
+  if(m){ const base=m[1]; const cand=AREA_WORDS.find(w=>w.startsWith(base)); if(cand) return cand; }
+  return '';
+}
+// 事業所名の抽出（■直後から最初の区切り記号まで）
+function extractJigyo(chunk){
+  let s=chunk.replace(/^[\s　]*/,'');
+  // 最初の / ／ 、 。 で区切る
+  const m=s.split(/[\/／、。\n]/);
+  return (m[0]||'').trim();
+}
+
+function parseSentence(){
+  const text=document.getElementById('bulk-text').value;
+  // ■で分割
+  let chunks=text.split('■').map(c=>c.trim()).filter(c=>c);
+  if(chunks.length===0){ alert('「■」で区切られた文章を貼り付けてください'); return; }
+  const commonArea=document.getElementById('bulk-area').value.trim();
+  const commonShu=document.getElementById('bulk-shu').value.trim();
+  parsedRows=chunks.map(chunk=>{
+    const jigyo=extractJigyo(chunk);
+    const shu=guessShu(jigyo, chunk)||commonShu||'その他';
+    const area=guessArea(chunk)||commonArea||'';
+    return { jigyo, shu, area, biko: chunk };
+  });
+  renderPreview();
+}
+
+function renderPreview(){
+  const body=document.getElementById('preview-body');
+  const shuOpts=['居宅介護支援','医療機関','地域包括支援センター','小規模多機能型','介護老人保健施設','その他'];
+  body.innerHTML=parsedRows.map((r,i)=>`
+    <tr>
+      <td style="padding:6px;border-bottom:1px solid #f0f0f0;">${r.jigyo||'<span style="color:#c00;">（事業所名なし）</span>'}</td>
+      <td style="padding:6px;border-bottom:1px solid #f0f0f0;">
+        <input list="prev-shu-list" value="${(r.shu||'').replace(/"/g,'&quot;')}" onchange="parsedRows[${i}].shu=this.value" style="width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+      </td>
+      <td style="padding:6px;border-bottom:1px solid #f0f0f0;">
+        <input value="${(r.area||'').replace(/"/g,'&quot;')}" onchange="parsedRows[${i}].area=this.value" style="width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+      </td>
+    </tr>`).join('')
+    +'<datalist id="prev-shu-list">'+shuOpts.map(o=>'<option>'+o+'</option>').join('')+'</datalist>';
+  document.getElementById('bulk-preview').style.display='block';
+}
+window.parseSentence=parseSentence; window.parsedRows=parsedRows;
+
+function applyBulk(){
+  const date=document.getElementById('bulk-date').value;
+  const staff=document.getElementById('bulk-staff').value;
+  const commonShu=document.getElementById('bulk-shu').value.trim();
+  const commonArea=document.getElementById('bulk-area').value.trim();
+  if(!date||!staff){ alert('日付と担当を選んでください'); return; }
+  if(!D[date]) { D[date]={}; SH.forEach(s=>D[date][s]=p16([])); }
+  if(!D[date][staff]) D[date][staff]=p16([]);
+
+  // 文章解析済みのプレビューがあればそれを使う
+  let recs=[];
+  if(parsedRows.length>0 && document.getElementById('bulk-preview').style.display!=='none'){
+    recs=parsedRows.filter(r=>r.jigyo&&r.jigyo.trim()).map(r=>({担当:staff,事業所名:r.jigyo,種類:r.shu||'その他',行政区:r.area||'',備考:r.biko||''}));
+  } else {
+    // 1行モード
+    const text=document.getElementById('bulk-text').value;
+    const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+    if(lines.length===0){ alert('事業所名を入力するか、文章を解析してください'); return; }
+    recs=lines.map(line=>{
+      const cols=line.split('\t').map(c=>c.trim());
+      return {担当:staff,事業所名:cols[0],種類:(cols[1]||commonShu||'その他'),行政区:(cols[2]||commonArea||''),備考:(cols[3]||'')};
+    }).filter(r=>r.事業所名);
+  }
+  if(recs.length===0){ alert('追加できる行がありません'); return; }
+
+  let added=0;
+  recs.forEach(rec=>{
+    const arr=D[date][staff];
+    let placed=false;
+    for(let i=0;i<arr.length;i++){
+      if(!arr[i].事業所名||!arr[i].事業所名.trim()){ arr[i]=rec; placed=true; break; }
+    }
+    if(!placed) arr.push(rec);
+    added++;
+  });
+  parsedRows=[];
+  curD=date; curS=staff;
+  rebuildDates();
+  closeBulk();
+  setSync(added+'件を追加しました（保存を忘れずに）');
+}
+
+function addNewDate(){
+  const input=prompt('追加する日付を入力してください（例：6/25）');
+  if(!input) return;
+  const m=input.trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(!m){ alert('「月/日」の形式で入力してください（例：6/25）'); return; }
+  const label=parseInt(m[1])+'/'+parseInt(m[2]);
+  if(D[label]){ alert('その日付は既にあります'); curD=label; rebuildDates(); return; }
+  D[label]={}; SH.forEach(s=>D[label][s]=p16([]));
+  curD=label;
+  rebuildDates();
+  setSync('日付 '+label+' を追加しました（保存を忘れずに）');
+}
+
+async function initialImport(){
+  if(GAS_URL==='PASTE_EIGYO_GAS_URL_HERE'){ alert('先にGASのURLを設定してください'); return; }
+  const records=flattenD();
+  if(!confirm('現在ファイルにある'+records.length+'件をスプレッドシートに取り込みます。よろしいですか？')) return;
+  setSync('取り込み中...');
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',visits:records})});
+    setSync('取り込み完了（'+records.length+'件）');
+    alert('取り込みが完了しました。今後は「保存」ボタンでスプレッドシートに反映されます。');
+  }catch(e){ setSync('取り込み失敗'); }
+}
+window.initialImport=initialImport;
+
+// 起動時：スプレッドシートにデータがあれば自動で読み込む（確認なし）
+async function autoLoadOnStart(){
+  if(GAS_URL==='PASTE_EIGYO_GAS_URL_HERE'){ renderAll(); return; }
+  setSync('読込中...');
+  try{
+    const res=await fetch(GAS_URL+'?action=list',{method:'GET'});
+    const data=await res.json();
+    if(Array.isArray(data.staff) && data.staff.length>0){
+      SH = mergeStaffWithData(data.staff);
+    }
+    const records=Array.isArray(data.visits)?data.visits:[];
+    if(records.length>0){
+      const newD=rebuildD(records);
+      Object.keys(D).forEach(k=>delete D[k]);
+      Object.keys(newD).forEach(k=>D[k]=newD[k]);
+      rebuildDates();
+      setSync('同期済（'+records.length+'件）');
+    } else {
+      renderAll();
+      setSync('スプレッドシートは空です（このファイルの内容を保存できます）');
+    }
+  }catch(e){ renderAll(); setSync('接続できません（ローカル表示中）'); }
+}
+
+autoLoadOnStart();
+</script>
+</body>
+</html>
