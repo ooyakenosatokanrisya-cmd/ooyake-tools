@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おおやけの里 空床管理システム</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #2E86AB 0%, #1B5E7A 100%);
+    color: white;
+    padding: 20px 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  header h1 { font-size: 22px; margin-bottom: 4px; }
+  header p { font-size: 13px; opacity: 0.9; }
+  nav {
+    background: white;
+    border-bottom: 2px solid #e0e0e0;
+    padding: 0 30px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  nav button {
+    background: none;
+    border: none;
+    padding: 14px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  nav button:hover { color: #2E86AB; background: #f5f7fa; }
+  nav button.active { color: #2E86AB; border-bottom-color: #2E86AB; font-weight: bold; }
+  main { padding: 24px 30px; max-width: 1400px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: #1B5E7A;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #2E86AB;
+  }
+
+  /* ダッシュボード */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 4px solid #2E86AB;
+  }
+  .kpi-card .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .kpi-card .value { font-size: 28px; font-weight: bold; color: #1B5E7A; }
+  .kpi-card .sub { font-size: 11px; color: #999; margin-top: 4px; }
+  .kpi-card.good { border-left-color: #52B788; }
+  .kpi-card.good .value { color: #2a9d8f; }
+  .kpi-card.warning { border-left-color: #F4A261; }
+  .kpi-card.warning .value { color: #E76F51; }
+  .kpi-card.danger { border-left-color: #D62828; }
+  .kpi-card.danger .value { color: #D62828; }
+
+  /* 居室マップ */
+  .room-map {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .room {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: transform 0.1s;
+    border: 2px solid transparent;
+  }
+  .room:hover { transform: scale(1.05); border-color: #333; }
+  .room .num { font-size: 14px; }
+  .room .status { font-size: 10px; margin-top: 2px; }
+  .room .days { font-size: 10px; margin-top: 2px; opacity: 0.9; }
+  .room.occupied { background: #cfe8d7; color: #2a5a3a; }
+  .room.vacant { background: #ffe5b4; color: #7a4d00; }
+  .room.vacant.alert { background: #fbc4c4; color: #7a1e1e; animation: pulse 2s infinite; }
+  .room.reserved { background: #c7dcf0; color: #1e4a7a; }
+  .room.shortstay { background: #EDE7F6; border-color: #7E57C2; }
+  .room.shortstay .status { color: #5E35B1; }
+  .room.leaving { background: #f5d5a5; color: #7a4d00; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.75; } }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-box {
+    width: 16px; height: 16px; border-radius: 3px;
+  }
+
+  /* テーブル */
+  table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 13px;
+  }
+  th {
+    background: #1B5E7A;
+    color: white;
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: normal;
+  }
+  td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  tr:hover td { background: #f9f9f9; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .badge.green { background: #d4edda; color: #155724; }
+  .badge.yellow { background: #fff3cd; color: #856404; }
+  .badge.red { background: #f8d7da; color: #721c24; }
+  .badge.blue { background: #d1ecf1; color: #0c5460; }
+  .badge.gray { background: #e2e3e5; color: #383d41; }
+
+  /* フォーム */
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  label { font-size: 13px; color: #555; min-width: 90px; }
+  input, select, textarea {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #2E86AB;
+  }
+  button.action {
+    background: #2E86AB;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  button.action:hover { background: #1B5E7A; }
+  button.action.danger { background: #D62828; }
+  button.action.danger:hover { background: #a01e1e; }
+  button.action.small { padding: 4px 10px; font-size: 11px; }
+
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  .card h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #1B5E7A;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* モーダル */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 16px; color: #1B5E7A; }
+  .modal .form-row { margin-bottom: 12px; }
+  .modal .actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  button.secondary {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+
+  /* アラート */
+  .alert-box {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .alert-box.danger { background: #fff0f0; border-left: 4px solid #D62828; color: #7a1e1e; }
+  .alert-box.warning { background: #fff8e1; border-left: 4px solid #F4A261; color: #7a4d00; }
+  .alert-box.info { background: #e8f4fa; border-left: 4px solid #2E86AB; color: #1B5E7A; }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏥 おおやけの里 空床管理システム</h1>
+  <p>居室番号ベース・匿名運用 / データはブラウザ内に保存されます</p>
+</header>
+
+<nav>
+  <button class="tab active" data-page="dashboard">📊 ダッシュボード</button>
+  <button class="tab" data-page="rooms">🛏️ 居室マップ</button>
+  <button class="tab" data-page="movements">📝 入退所管理</button>
+  <button class="tab" data-page="candidates">👥 候補者管理</button>
+  <button class="tab" data-page="weekly">📅 週次予測</button>
+  <button class="tab" data-page="stats">📈 統計・履歴</button>
+  <button class="tab" data-page="report">📤 空床配信</button>
+  <button class="tab" data-page="settings">⚙️ 設定</button>
+</nav>
+
+<main>
+
+<!-- ダッシュボード -->
+<section id="page-dashboard" class="page active">
+  <h2>ダッシュボード</h2>
+  <div id="alerts"></div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>本日の予定</h3>
+      <table>
+        <thead><tr><th>種別</th><th>居室</th><th>時刻</th><th>メモ</th></tr></thead>
+        <tbody id="todayList"><tr><td colspan="4" style="text-align:center; color:#999;">本日の予定はありません</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>48時間超の空床</h3>
+      <table>
+        <thead><tr><th>居室</th><th>空床開始</th><th>経過日数</th><th>候補</th></tr></thead>
+        <tbody id="longVacantList"><tr><td colspan="4" style="text-align:center; color:#999;">該当なし</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 居室マップ -->
+<section id="page-rooms" class="page">
+  <h2>居室マップ</h2>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-box" style="background:#cfe8d7"></div>入所中</div>
+    <div class="legend-item"><div class="legend-box" style="background:#f5d5a5"></div>退所予定</div>
+    <div class="legend-item"><div class="legend-box" style="background:#ffe5b4"></div>空床（48時間以内）</div>
+    <div class="legend-item"><div class="legend-box" style="background:#fbc4c4"></div>空床（48時間超）</div>
+    <div class="legend-item"><div class="legend-box" style="background:#c7dcf0"></div>入所予約済</div>
+  </div>
+  <div id="roomMap" class="room-map"></div>
+</section>
+
+<!-- 入退所管理 -->
+<section id="page-movements" class="page">
+  <h2>入退所管理</h2>
+  <div class="card">
+    <h3>新規記録の追加</h3>
+    <div class="form-row">
+      <label>種別</label>
+      <select id="mvType" onchange="onMvTypeChange()">
+        <option value="in">入所</option>
+        <option value="ss">ショートステイ</option>
+        <option value="out">退所</option>
+        <option value="move">転室</option>
+      </select>
+      <label>居室</label>
+      <select id="mvRoom"></select>
+      <label>日付</label>
+      <input type="date" id="mvDate">
+      <label>時刻(任意)</label>
+      <input type="time" id="mvTime" style="width:110px">
+      <span id="mvSsEndWrap" style="display:none">
+        <label>ショート終了日</label>
+        <input type="date" id="mvSsEnd">
+      </span>
+      <span id="mvToRoomWrap" style="display:none">
+        <label>転室先</label>
+        <select id="mvToRoom"></select>
+      </span>
+    </div>
+    <div class="form-row">
+      <label>経路</label>
+      <select id="mvRoute">
+        <option value="病院">病院</option>
+        <option value="自宅">自宅</option>
+        <option value="在宅系">在宅系</option>
+        <option value="特養">特養</option>
+        <option value="老健">老健</option>
+        <option value="死亡">死亡</option>
+        <option value="その他">その他</option>
+      </select>
+      <label>紹介元</label>
+      <input type="text" id="mvSource" placeholder="例：〇〇病院">
+      <label>メモ</label>
+      <input type="text" id="mvNote" style="flex:1;min-width:200px" placeholder="任意">
+    </div>
+    <div class="form-row">
+      <button class="action" onclick="addMovement()">記録を追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>記録一覧（新しい順）</h3>
+    <div class="toolbar">
+      <label>種別</label>
+      <select id="mvFilter" onchange="renderMovements()">
+        <option value="all">すべて</option>
+        <option value="in">入所のみ</option>
+        <option value="out">退所のみ</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>日付</th><th>種別</th><th>居室</th><th>経路</th><th>紹介元</th><th>メモ</th><th>操作</th></tr></thead>
+      <tbody id="movementList"><tr><td colspan="7" style="text-align:center; color:#999;">記録がありません</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 候補者管理 -->
+<section id="page-candidates" class="page">
+  <h2>候補者管理（入所待ち）</h2>
+  <div class="card">
+    <h3>候補者の追加</h3>
+    <div class="form-row">
+      <label>候補ID</label>
+      <input type="text" id="cdId" placeholder="例：C001">
+      <label>紹介元</label>
+      <input type="text" id="cdSource" placeholder="例：〇〇病院">
+      <label>希望入所日</label>
+      <input type="date" id="cdDate">
+    </div>
+    <div class="form-row">
+      <label>優先度</label>
+      <select id="cdPriority">
+        <option value="A">A：本命</option>
+        <option value="B">B：候補</option>
+        <option value="C">C：予備</option>
+      </select>
+      <label>受入判定</label>
+      <select id="cdJudge">
+        <option value="可">可</option>
+        <option value="条件付き">条件付き</option>
+        <option value="要協議">要協議</option>
+        <option value="困難">困難</option>
+      </select>
+      <label>メモ</label>
+      <input type="text" id="cdNote" style="flex:1; min-width:200px" placeholder="任意">
+    </div>
+    <div class="form-row">
+      <button class="action" onclick="addCandidate()">追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>候補者一覧</h3>
+    <div class="form-row" style="margin-bottom:10px">
+      <button class="action" onclick="importFromDash()">入所ダッシュボードから取込（検討会議「可」・未入所）</button>
+      <span id="dashImportStatus" style="font-size:12px;color:#666"></span>
+    </div>
+    <table>
+      <thead><tr><th>候補ID</th><th>紹介元</th><th>希望入所日</th><th>優先度</th><th>判定</th><th>メモ</th><th>操作</th></tr></thead>
+      <tbody id="candidateList"><tr><td colspan="7" style="text-align:center; color:#999;">候補者がいません</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 週次予測 -->
+<section id="page-weekly" class="page">
+  <h2>週次予測</h2>
+  <div class="card">
+    <h3>今後7日間の予測</h3>
+    <div class="kpi-grid" id="weeklyKpi"></div>
+    <div id="weeklyAlert"></div>
+    <table>
+      <thead><tr><th>日付</th><th>曜日</th><th>退所予定</th><th>入所予定</th><th>予測空床数</th><th>予測稼働率</th><th>判定</th></tr></thead>
+      <tbody id="weeklyTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 統計・履歴 -->
+<section id="page-stats" class="page">
+  <h2>統計・履歴</h2>
+
+  <div class="card">
+    <h3>月次サマリー</h3>
+    <div class="form-row">
+      <label>対象月</label>
+      <input type="month" id="statsMonth">
+      <button class="action small" onclick="renderStats()">集計</button>
+    </div>
+    <div class="kpi-grid" id="statsKpi"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>紹介元別 実績</h3>
+      <table>
+        <thead><tr><th>紹介元</th><th>入所件数</th><th>退所件数</th></tr></thead>
+        <tbody id="sourceList"><tr><td colspan="3" style="text-align:center; color:#999;">データなし</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>入退所経路別</h3>
+      <table>
+        <thead><tr><th>経路</th><th>入所</th><th>退所</th></tr></thead>
+        <tbody id="routeList"><tr><td colspan="3" style="text-align:center; color:#999;">データなし</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 設定 -->
+
+<!-- 空床配信 -->
+<section id="page-report" class="page">
+  <h2>空床配信（紹介元ポータルへの公開）</h2>
+  <div class="card">
+    <h3>1．空床の性別条件を確認</h3>
+    <p style="font-size:12px;color:#666">多床室・2人室は同室者の状況により受入可能な性別が変わります。空床のある部屋ごとに条件を設定してください（保存されます）。個室は自動で「どちらでも」になります。</p>
+    <div id="rgGender"></div>
+  </div>
+  <div class="card">
+    <h3>2．ショートステイ・補足コメント</h3>
+    <textarea id="rgSS" rows="3" style="width:100%" placeholder="例：SSは8月第2週に空きあり。つなぎ利用のご相談も歓迎します。"></textarea>
+  </div>
+  <div class="card">
+    <h3>3．ポータル接続設定（初回のみ）</h3>
+    <div style="display:grid;gap:8px">
+      <div><label style="font-size:12px;color:#666">GASウェブアプリのURL（…/exec）</label>
+        <input id="rgGas" style="width:100%" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div><label style="font-size:12px;color:#666">公開キー（GASのADMIN_KEYと同じ値）</label>
+        <input id="rgKey" style="width:100%" type="password"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>4．公開する</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="publishVacancy()" style="font-weight:bold">🌐 ポータルに公開（今の空床状況を反映）</button>
+      <button onclick="openPrintReport()">🖨️ 印刷用（FAX等の補助用）</button>
+    </div>
+    <p id="rgStatus" style="font-size:13px;margin-top:8px;color:#666">公開すると紹介元ポータルの表示が即時に更新されます。掲載は居室種別・床数・性別条件のみで、個人情報・居室番号は公開しません。予約済みは自動除外。</p>
+    <pre id="rgPreview" style="background:#f4f8f7;border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;display:none"></pre>
+  </div>
+</section>
+
+<section id="page-settings" class="page">
+  <h2>設定</h2>
+
+  <div class="card">
+    <h3>基本設定</h3>
+    <div class="form-row">
+      <label>定員（床）</label>
+      <input type="number" id="cfgCapacity" style="width:100px">
+      <label>目標稼働率(%)</label>
+      <input type="number" id="cfgTarget" step="0.1" style="width:100px">
+      <label>内部目標(%)</label>
+      <input type="number" id="cfgInternal" step="0.1" style="width:100px">
+    </div>
+    <div class="form-row">
+      <label>注意ライン(%)</label>
+      <input type="number" id="cfgWarn" step="0.1" style="width:100px">
+      <label>是正ライン(%)</label>
+      <input type="number" id="cfgAlert" step="0.1" style="width:100px">
+      <label>空床アラート(時間)</label>
+      <input type="number" id="cfgVacantHours" style="width:100px">
+    </div>
+    <div class="form-row">
+      <label>入所ダッシュボード連携URL（GAS）</label>
+      <input type="text" id="cfgDashUrl" style="width:100%;max-width:560px" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="form-row">
+      <button class="action" onclick="saveConfig()">設定を保存</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>居室マスタ</h3>
+    <div class="alert-box info">
+      居室番号を1行ずつ入力してください。定員と件数が一致するようにしてください。
+    </div>
+    <div class="form-row">
+      <textarea id="cfgRooms" rows="8" style="width:100%; font-family:monospace;"></textarea>
+    </div>
+    <div class="form-row">
+      <button class="action" onclick="saveRooms()">居室マスタを保存</button>
+      <button class="action secondary" onclick="autoGenerateRooms()">定員数から自動生成</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>データ管理</h3>
+    <div class="alert-box warning">
+      データはブラウザに保存されています。バックアップは定期的にエクスポートしてください。
+    </div>
+    <div class="form-row">
+      <button class="action" onclick="exportData()">📥 データをエクスポート</button>
+      <button class="action" onclick="document.getElementById('importFile').click()">📤 データをインポート</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="action danger" onclick="clearAllData()">🗑️ 全データを削除</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>規定値（初期データ）</h3>
+    <p style="font-size:12px;color:#666">現在のデータ（居室・入退所履歴・候補・設定・性別条件など全て）を初期データとして埋め込んだHTMLファイルを書き出します。書き出したファイルで差し替えると、初めて開く端末やデータ初期化後も、この時点のデータから始まります。すでに使用中の端末では各端末の保存データが優先されます。</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="exportSeededHtml()" style="font-weight:bold">💾 現在のデータを規定値として保存（HTML書き出し）</button>
+      <button onclick="applySeed()">↩️ 規定値のデータに戻す</button>
+    </div>
+    <p id="seedStatus" style="font-size:12px;color:#666;margin-top:6px"></p>
+    <p style="font-size:11px;color:#B71C1C;margin-top:6px">注意：書き出したHTMLにはデータがそのまま入ります。GitHubの公開リポジトリに置く場合は誰でも閲覧できるため、氏名など個人を特定できる情報は入力しない運用としてください（紹介元名・イニシャル程度に留める）。</p>
+  </div>
+</section>
+
+</main>
+
+<!-- 居室クリック時のモーダル -->
+<div class="modal-backdrop" id="roomModal">
+  <div class="modal">
+    <h3 id="roomModalTitle">居室</h3>
+    <div id="roomModalBody"></div>
+    <div class="actions">
+      <button class="secondary" onclick="closeModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  おおやけの里 空床管理システム / データはお使いのブラウザ内に保存されます / 個人情報を含めない匿名運用推奨
+</footer>
+
+<script>
+// ========================================================
+// データストア
+// ========================================================
+const STORE_KEY = 'oyake_bed_mgmt_v1';
+
+/* 規定値（初期データ）。「規定値として保存」で書き出したファイルには実データが入る。 */
+const SEED_STATE = null; /*SEED*/
+
+let state = {
+  config: {
+    capacity: 150,
+    target: 94.0,
+    internal: 95.0,
+    warn: 94.5,
+    alert: 94.0,
+    vacantHours: 48
+  },
+  rooms: [], // 居室番号のリスト（文字列）
+  occupancy: {}, // {居室番号: {status:'occupied'|'vacant', since:'YYYY-MM-DD', route, source, note} }
+  movements: [], // 入退所履歴 {id, type:'in'|'out', room, date, route, source, note, ts}
+  candidates: [], // 候補者 {id:'C001', source, wishDate, priority:'A'|'B'|'C', judge, note}
+  reservations: [] // 予約 {room, date, candidateId}
+};
+
+function loadState() {
+  const s = localStorage.getItem(STORE_KEY);
+  if (!s && SEED_STATE) {
+    // この端末に保存データが無い場合のみ、規定値から開始
+    state = Object.assign(state, JSON.parse(JSON.stringify(SEED_STATE)));
+    saveState();
+    return;
+  }
+  if (s) {
+    try {
+      const loaded = JSON.parse(s);
+      state = Object.assign(state, loaded);
+    } catch(e) { console.error(e); }
+  }
+  // 初期化：居室未設定なら自動生成
+  if (!state.rooms || state.rooms.length === 0) {
+    autoGenerateRoomsInternal();
+  }
+}
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+// ========================================================
+// ユーティリティ
+// ========================================================
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function toDate(s) { return new Date(s + 'T00:00:00'); }
+function daysBetween(a, b) {
+  return Math.round((toDate(b) - toDate(a)) / (1000*60*60*24));
+}
+function hoursSince(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return (new Date() - d) / (1000*60*60);
+}
+function fmt(n, d=1) { return Number(n).toFixed(d); }
+function uid() { return 'M' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+// ========================================================
+// 居室状態計算
+// ========================================================
+function computeOccupancy() {
+  const occ = {};
+  const t0 = today();
+  // 記録のない部屋の空床開始日は初回確認日で固定する(毎回リセットしない)
+  if (!state.baseline) state.baseline = {};
+  state.rooms.forEach(r => {
+    if (!state.baseline[r]) state.baseline[r] = t0;
+    occ[r] = { status: 'vacant', since: state.baseline[r] };
+  });
+
+  // 履歴を古い順に再生(本日以前の記録のみ。未来日付は「予定」であり現状には反映しない)
+  const sortKey = m => m.date + 'T' + (m.time || (m.type === 'out' ? '06:00' : (m.type === 'move' ? '12:00' : '18:00')));
+  const sorted = [...state.movements].filter(m => m.date <= t0).sort((a,b) => sortKey(a).localeCompare(sortKey(b)) || a.ts - b.ts);
+  sorted.forEach(m => {
+    if (!occ[m.room]) return;
+    if (m.type === 'in') {
+      occ[m.room] = { status: 'occupied', since: m.date, route: m.route, source: m.source, note: m.note, stayType: m.stayType || 'long' };
+    } else if (m.type === 'move') {
+      const cur = occ[m.room];
+      if (cur && cur.status === 'occupied' && occ[m.toRoom] !== undefined) {
+        occ[m.toRoom] = { status: 'occupied', since: cur.since, route: cur.route, source: cur.source, note: cur.note, stayType: cur.stayType || 'long' };
+        occ[m.room] = { status: 'vacant', since: m.date, note: '転室により空床' };
+      }
+    } else {
+      occ[m.room] = { status: 'vacant', since: m.date, route: m.route, source: m.source, note: m.note };
+    }
+  });
+
+  // 予約情報を反映
+  state.reservations.forEach(r => {
+    if (occ[r.room] && occ[r.room].status === 'vacant') {
+      occ[r.room].reserved = r;
+    }
+  });
+
+  // 退所予定：候補者に近い将来の予定があるか（今回は簡易的に、退所予定という記録がある場合を検出）
+  // ここではmovementのdateが未来の'out'をleaving扱い
+  const t = today();
+  state.movements.forEach(m => {
+    if (m.type === 'out' && m.date > t && occ[m.room] && occ[m.room].status === 'occupied') {
+      occ[m.room].leavingDate = m.date;
+    }
+  });
+
+  state.occupancy = occ;
+  return occ;
+}
+
+// ========================================================
+// KPI計算
+// ========================================================
+function computeKPI() {
+  const occ = computeOccupancy();
+  const cap = state.config.capacity;
+  const vh = state.config.vacantHours;
+
+  let occupied = 0, vacant = 0, vacantAlert = 0, leaving = 0, reserved = 0, shortStay = 0;
+  Object.values(occ).forEach(v => {
+    if (v.status === 'occupied') { occupied++; if (v.stayType === 'short') shortStay++; }
+    else vacant++;
+    if (v.status === 'vacant' && hoursSince(v.since) > vh) vacantAlert++;
+    if (v.leavingDate) leaving++;
+    if (v.reserved) reserved++;
+  });
+
+  const rate = cap > 0 ? (occupied / cap * 100) : 0;
+  return {
+    capacity: cap, occupied, vacant, vacantAlert, leaving, reserved, rate, shortStay
+  };
+}
+
+// ========================================================
+// 描画：ダッシュボード
+// ========================================================
+function renderDashboard() {
+  const k = computeKPI();
+  const cfg = state.config;
+
+  // 判定
+  let rateClass = 'good';
+  if (k.rate < cfg.alert) rateClass = 'danger';
+  else if (k.rate < cfg.warn) rateClass = 'warning';
+
+  const kpiHtml = `
+    <div class="kpi-card ${rateClass}">
+      <div class="label">現在の稼働率</div>
+      <div class="value">${fmt(k.rate)}%</div>
+      <div class="sub">目標 ${cfg.target}% / 内部 ${cfg.internal}%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">入所中(長期+ショート)</div>
+      <div class="value">${k.occupied}<span style="font-size:14px">/${k.capacity}</span></div>
+      <div class="sub">うちショートステイ ${k.shortStay} 床</div>
+    </div>
+    <div class="kpi-card ${k.vacantAlert > 0 ? 'danger' : ''}">
+      <div class="label">空床数</div>
+      <div class="value">${k.vacant}</div>
+      <div class="sub">${cfg.vacantHours}時間超: ${k.vacantAlert} 床</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="label">退所予定</div>
+      <div class="value">${k.leaving}</div>
+      <div class="sub">今後の退所予定</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">予約済み空床</div>
+      <div class="value">${k.reserved}</div>
+      <div class="sub">候補者確定済み</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">候補者数</div>
+      <div class="value">${state.candidates.length}</div>
+      <div class="sub">入所待ちリスト</div>
+    </div>
+  `;
+  document.getElementById('kpiGrid').innerHTML = kpiHtml;
+
+  // アラート
+  const alerts = [];
+  if (k.rate < cfg.alert) {
+    alerts.push(`<div class="alert-box danger">🚨 稼働率 ${fmt(k.rate)}% が是正ライン ${cfg.alert}% を下回っています。空床の埋め合わせを優先してください。</div>`);
+  } else if (k.rate < cfg.warn) {
+    alerts.push(`<div class="alert-box warning">⚠️ 稼働率 ${fmt(k.rate)}% が注意ライン ${cfg.warn}% を下回っています。週次予測を確認してください。</div>`);
+  }
+  if (k.vacantAlert > 0) {
+    alerts.push(`<div class="alert-box danger">🛏️ ${cfg.vacantHours}時間を超える空床が ${k.vacantAlert} 床あります。候補者の充当を検討してください。</div>`);
+  }
+  if (k.leaving > 0 && k.reserved < k.leaving) {
+    alerts.push(`<div class="alert-box warning">📋 退所予定 ${k.leaving} 床に対し、予約済み ${k.reserved} 床です。候補者の紐付けを進めてください。</div>`);
+  }
+  document.getElementById('alerts').innerHTML = alerts.join('');
+
+  // 本日の予定
+  const t = today();
+  const todayList = state.movements.filter(m => m.date === t)
+    .sort((a,b) => (a.ts||0)-(b.ts||0));
+  const todayHtml = todayList.length ? todayList.map(m =>
+    `<tr>
+      <td>${m.type==='in'?'<span class="badge green">入所</span>':'<span class="badge yellow">退所</span>'}</td>
+      <td>${m.room}</td>
+      <td>${m.time||'-'}</td>
+      <td>${m.note||''}</td>
+    </tr>`
+  ).join('') : `<tr><td colspan="4" style="text-align:center; color:#999;">本日の予定はありません</td></tr>`;
+  document.getElementById('todayList').innerHTML = todayHtml;
+
+  // 48時間超の空床
+  const longV = Object.entries(state.occupancy)
+    .filter(([r,v]) => v.status === 'vacant' && hoursSince(v.since) > cfg.vacantHours)
+    .map(([r,v]) => ({ room: r, since: v.since, days: Math.floor(hoursSince(v.since)/24), reserved: v.reserved }));
+  const longVHtml = longV.length ? longV.map(x =>
+    `<tr>
+      <td>${x.room}</td>
+      <td>${x.since}</td>
+      <td><span class="badge red">${x.days}日</span></td>
+      <td>${x.reserved ? '予約済' : '<span class="badge gray">未定</span>'}</td>
+    </tr>`
+  ).join('') : `<tr><td colspan="4" style="text-align:center; color:#999;">該当なし</td></tr>`;
+  document.getElementById('longVacantList').innerHTML = longVHtml;
+}
+
+// ========================================================
+// 描画：居室マップ
+// ========================================================
+function renderRoomMap() {
+  computeOccupancy();
+  const cfg = state.config;
+  const groups = {};
+  state.rooms.forEach(r => { const f = floorOfRoom(r); (groups[f] = groups[f] || []).push(r); });
+  document.getElementById('roomMap').innerHTML = Object.entries(groups).map(([f, beds]) => {
+    const occN = beds.filter(r => (state.occupancy[r]||{}).status === 'occupied').length;
+    const head = `<div style="grid-column:1/-1;margin:10px 0 2px;font-weight:700;font-size:14px;color:#1B5E7A">${f}　<span style="font-weight:400;font-size:12px;color:#888">在床 ${occN} / ${beds.length}床</span></div>`;
+    return head + beds.map(r => tileHtml(r, cfg)).join('');
+  }).join('');
+}
+function tileHtml(r, cfg) {
+  const v = state.occupancy[r] || { status:'vacant' };
+  let cls = 'occupied';
+  let statusText = '入所中';
+  let sub = '';
+  if (v.status === 'occupied') {
+    cls = 'occupied';
+    statusText = '入所中';
+    const days = daysBetween(v.since, today());
+    sub = `${days}日目`;
+    if (v.stayType === 'short') {
+      cls = 'shortstay';
+      statusText = 'ショート';
+      sub = v.leavingDate ? ('〜' + v.leavingDate.slice(5).replace('-','/')) : `${days}日目`;
+    } else if (v.leavingDate) {
+      cls = 'leaving';
+      statusText = '退所予定';
+      sub = v.leavingDate;
+    }
+  } else {
+    cls = 'vacant';
+    statusText = '空床';
+    const h = hoursSince(v.since);
+    if (h > cfg.vacantHours) {
+      cls = 'vacant alert';
+      sub = `${Math.floor(h/24)}日超`;
+    } else {
+      sub = `${Math.floor(h)}h`;
+    }
+    if (v.reserved) {
+      cls = 'reserved';
+      statusText = '予約済';
+      sub = v.reserved.candidateId;
+    }
+  }
+  return `<div class="room ${cls}" onclick="showRoomDetail('${r}')">
+    <div class="num">${r}</div>
+    <div class="status">${statusText}</div>
+    <div class="days">${sub}</div>
+  </div>`;
+}
+
+function showRoomDetail(room) {
+  const v = state.occupancy[room] || {};
+  const history = state.movements.filter(m => m.room === room || m.toRoom === room).slice(-5).reverse();
+  document.getElementById('roomModalTitle').textContent = '居室 ' + room;
+  let body = `<p><strong>状態:</strong> ${v.status==='occupied'?'入所中':'空床'}</p>`;
+  body += `<p><strong>${v.status==='occupied'?'入所日':'空床開始'}:</strong> ${v.since || '-'}</p>`;
+  if (v.route) body += `<p><strong>経路:</strong> ${v.route}</p>`;
+  if (v.source) body += `<p><strong>紹介元:</strong> ${v.source}</p>`;
+  if (v.note) body += `<p><strong>メモ:</strong> ${v.note}</p>`;
+  if (v.leavingDate) body += `<p><strong>退所予定日:</strong> ${v.leavingDate}</p>`;
+  if (v.reserved) body += `<p><strong>予約:</strong> ${v.reserved.candidateId} (${v.reserved.date})</p>`;
+
+  body += '<hr style="margin:12px 0"><h4 style="font-size:13px; margin-bottom:8px;">最近の履歴</h4>';
+  if (history.length) {
+    body += '<table style="font-size:12px">';
+    body += '<thead><tr><th>日付</th><th>種別</th><th>経路</th></tr></thead><tbody>';
+    history.forEach(h => {
+      body += `<tr><td>${h.date}</td><td>${h.type==='in'?'入所':(h.type==='move'?('転室→'+(h.toRoom||'')):'退所')}</td><td>${h.route||'-'}</td></tr>`;
+    });
+    body += '</tbody></table>';
+  } else {
+    body += '<p style="color:#999">履歴なし</p>';
+  }
+  document.getElementById('roomModalBody').innerHTML = body;
+  document.getElementById('roomModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('roomModal').classList.remove('show');
+}
+
+// ========================================================
+// 入退所管理
+// ========================================================
+function fillRoomSelect() {
+  const opts = state.rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+  document.getElementById('mvRoom').innerHTML = opts;
+  document.getElementById('mvToRoom').innerHTML = opts;
+}
+function onMvTypeChange() {
+  const t = document.getElementById('mvType').value;
+  document.getElementById('mvSsEndWrap').style.display = t === 'ss' ? 'inline' : 'none';
+  document.getElementById('mvToRoomWrap').style.display = t === 'move' ? 'inline' : 'none';
+}
+function addMovement() {
+  const typeSel = document.getElementById('mvType').value;
+  const room = document.getElementById('mvRoom').value;
+  const date = document.getElementById('mvDate').value || today();
+  const route = document.getElementById('mvRoute').value;
+  const source = document.getElementById('mvSource').value.trim();
+  const note = document.getElementById('mvNote').value.trim();
+  if (!room) { alert('居室を選択してください'); return; }
+
+  if (typeSel === 'ss') {
+    // ショートステイ: 開始(in)と終了日(out)を同時登録。履歴再生が予定として扱い、終了日到来で自動的に空床へ戻る。
+    const end = document.getElementById('mvSsEnd').value;
+    if (!end) { alert('ショート終了日を入力してください'); return; }
+    if (end <= date) { alert('終了日は開始日より後の日付にしてください'); return; }
+    const time = document.getElementById('mvTime').value || '';
+    state.movements.push({ id: uid(), type: 'in',  room, date, time, route, source, note, stayType: 'short', ts: Date.now() });
+    state.movements.push({ id: uid(), type: 'out', room, date: end, time: '', route: '自宅', source, note: 'ショート終了', stayType: 'short', ts: Date.now() + 1 });
+  } else if (typeSel === 'move') {
+    const toRoom = document.getElementById('mvToRoom').value;
+    const time = document.getElementById('mvTime').value || '';
+    if (!toRoom || toRoom === room) { alert('転室先を選択してください（元の居室と同じにはできません）'); return; }
+    computeOccupancy();
+    const fromNow = state.occupancy[room] || {};
+    const toNow = state.occupancy[toRoom] || {};
+    if (fromNow.status !== 'occupied' && !confirm('移動元 ' + room + ' は現在空床の扱いです。このまま転室を記録しますか？')) return;
+    if (toNow.status === 'occupied' && !confirm('転室先 ' + toRoom + ' は現在在床の扱いです。上書きしてよろしいですか？')) return;
+    state.movements.push({ id: uid(), type: 'move', room, toRoom, date, time, route: '', source: '', note, ts: Date.now() });
+  } else {
+    const time = document.getElementById('mvTime').value || '';
+    state.movements.push({ id: uid(), type: typeSel, room, date, time, route, source, note, stayType: 'long', ts: Date.now() });
+  }
+  saveState();
+  // クリア
+  document.getElementById('mvSource').value = '';
+  document.getElementById('mvNote').value = '';
+  renderAll();
+  alert('記録を追加しました');
+}
+function renderMovements() {
+  const filter = document.getElementById('mvFilter').value;
+  let list = [...state.movements].sort((a,b) => b.date.localeCompare(a.date) || (b.ts||0)-(a.ts||0));
+  if (filter !== 'all') list = list.filter(m => m.type === filter);
+  const html = list.length ? list.map(m =>
+    `<tr>
+      <td>${m.date}${m.time ? ' ' + m.time : ''}</td>
+      <td>${m.type==='in' ? (m.stayType==='short' ? '<span class="badge" style="background:#EDE7F6;color:#5E35B1">ショート</span>' : '<span class="badge green">入所</span>') : (m.type==='move' ? '<span class="badge" style="background:#E3F2FD;color:#1565C0">転室</span>' : '<span class="badge yellow">退所</span>')}</td>
+      <td>${m.type==='move' ? m.room + '→' + m.toRoom : m.room}</td>
+      <td>${m.route||'-'}</td>
+      <td>${m.source||'-'}</td>
+      <td>${m.note||''}</td>
+      <td><button class="action small danger" onclick="deleteMovement('${m.id}')">削除</button></td>
+    </tr>`
+  ).join('') : `<tr><td colspan="7" style="text-align:center; color:#999;">記録がありません</td></tr>`;
+  document.getElementById('movementList').innerHTML = html;
+}
+function deleteMovement(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  state.movements = state.movements.filter(m => m.id !== id);
+  saveState();
+  renderAll();
+}
+
+// ========================================================
+// 候補者管理
+// ========================================================
+function addCandidate() {
+  const c = {
+    id: document.getElementById('cdId').value.trim() || ('C' + Date.now().toString(36).slice(-5).toUpperCase()),
+    source: document.getElementById('cdSource').value.trim(),
+    wishDate: document.getElementById('cdDate').value,
+    priority: document.getElementById('cdPriority').value,
+    judge: document.getElementById('cdJudge').value,
+    note: document.getElementById('cdNote').value.trim()
+  };
+  if (!c.source) { alert('紹介元を入力してください'); return; }
+  state.candidates.push(c);
+  saveState();
+  document.getElementById('cdId').value = '';
+  document.getElementById('cdSource').value = '';
+  document.getElementById('cdNote').value = '';
+  renderCandidates();
+  alert('候補者を追加しました');
+}
+function deleteCandidate(id) {
+  if (!confirm('この候補を削除しますか？')) return;
+  state.candidates = state.candidates.filter(c => c.id !== id);
+  saveState();
+  renderCandidates();
+}
+function renderCandidates() {
+  const priBadge = { A:'red', B:'yellow', C:'gray' };
+  const jdgBadge = { '可':'green', '条件付き':'yellow', '要協議':'yellow', '困難':'red' };
+  const html = state.candidates.length ? state.candidates
+    .sort((a,b) => a.priority.localeCompare(b.priority) || (a.wishDate||'').localeCompare(b.wishDate||''))
+    .map(c =>
+    `<tr>
+      <td>${c.id}</td>
+      <td>${c.source}</td>
+      <td>${c.wishDate||'-'}</td>
+      <td><span class="badge ${priBadge[c.priority]}">${c.priority}</span></td>
+      <td><span class="badge ${jdgBadge[c.judge]||'gray'}">${c.judge}</span></td>
+      <td>${c.note||''}</td>
+      <td><button class="action small danger" onclick="deleteCandidate('${c.id}')">削除</button></td>
+    </tr>`
+  ).join('') : `<tr><td colspan="7" style="text-align:center; color:#999;">候補者がいません</td></tr>`;
+  document.getElementById('candidateList').innerHTML = html;
+}
+
+// ========================================================
+// 週次予測
+// ========================================================
+function renderWeekly() {
+  const cfg = state.config;
+  computeOccupancy();
+  const cap = cfg.capacity;
+  const t = today();
+
+  let currentOccupied = Object.values(state.occupancy).filter(v => v.status === 'occupied').length;
+
+  const rows = [];
+  let cumOccupied = currentOccupied;
+  let futureOut = 0, futureIn = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const ds = d.toISOString().slice(0,10);
+    const dayNames = ['日','月','火','水','木','金','土'];
+    const dow = dayNames[d.getDay()];
+
+    const outs = state.movements.filter(m => m.type === 'out' && m.date === ds && m.date > t).length;
+    const ins = state.movements.filter(m => m.type === 'in' && m.date === ds && m.date > t).length;
+
+    if (i > 0) {
+      cumOccupied = cumOccupied - outs + ins;
+    }
+    futureOut += outs;
+    futureIn += ins;
+
+    const rate = cap > 0 ? (cumOccupied / cap * 100) : 0;
+    let judge = '<span class="badge green">安全</span>';
+    if (rate < cfg.alert) judge = '<span class="badge red">是正</span>';
+    else if (rate < cfg.warn) judge = '<span class="badge yellow">注意</span>';
+
+    rows.push(`<tr>
+      <td>${ds}</td>
+      <td>${dow}</td>
+      <td>${outs}</td>
+      <td>${ins}</td>
+      <td>${cap - cumOccupied}</td>
+      <td>${fmt(rate)}%</td>
+      <td>${judge}</td>
+    </tr>`);
+  }
+  document.getElementById('weeklyTable').innerHTML = rows.join('');
+
+  // KPI
+  const preserve = state.candidates.filter(c => c.priority !== 'C').length;
+  document.getElementById('weeklyKpi').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">7日以内 退所予定</div>
+      <div class="value">${futureOut}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">7日以内 入所予定</div>
+      <div class="value">${futureIn}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">差分（入所-退所）</div>
+      <div class="value">${futureIn - futureOut >= 0 ? '+' : ''}${futureIn - futureOut}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">A/B候補者</div>
+      <div class="value">${preserve}</div>
+    </div>
+  `;
+
+  // アラート
+  const alerts = [];
+  if (futureOut > futureIn) {
+    alerts.push(`<div class="alert-box warning">⚠️ 退所予定 ${futureOut} 件 に対して、入所予定は ${futureIn} 件です。候補者を確定させてください。</div>`);
+  }
+  if (futureIn === 0 && futureOut > 0) {
+    alerts.push(`<div class="alert-box danger">🚨 7日以内の入所予定が0件です。緊急に候補者との調整が必要です。</div>`);
+  }
+  document.getElementById('weeklyAlert').innerHTML = alerts.join('');
+}
+
+// ========================================================
+// 統計
+// ========================================================
+function renderStats() {
+  const m = document.getElementById('statsMonth').value || today().slice(0,7);
+  const monthly = state.movements.filter(x => x.date.startsWith(m));
+  const ins = monthly.filter(x => x.type === 'in');
+  const outs = monthly.filter(x => x.type === 'out');
+  const cap = state.config.capacity;
+
+  // 稼働率は履歴からの再構築が正確だが、簡易的に「入所-退所の月末残」で
+  document.getElementById('statsKpi').innerHTML = `
+    <div class="kpi-card">
+      <div class="label">対象月</div>
+      <div class="value" style="font-size:20px">${m}</div>
+    </div>
+    <div class="kpi-card good">
+      <div class="label">入所件数</div>
+      <div class="value">${ins.length}</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="label">退所件数</div>
+      <div class="value">${outs.length}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">純増減</div>
+      <div class="value">${ins.length - outs.length >= 0 ? '+' : ''}${ins.length - outs.length}</div>
+    </div>
+  `;
+
+  // 紹介元別
+  const src = {};
+  ins.forEach(x => { const k = x.source || '不明'; src[k] = src[k] || {in:0,out:0}; src[k].in++; });
+  outs.forEach(x => { const k = x.source || '不明'; src[k] = src[k] || {in:0,out:0}; src[k].out++; });
+  const srcHtml = Object.entries(src).length ? Object.entries(src).map(([k,v]) =>
+    `<tr><td>${k}</td><td>${v.in}</td><td>${v.out}</td></tr>`
+  ).join('') : `<tr><td colspan="3" style="text-align:center; color:#999;">データなし</td></tr>`;
+  document.getElementById('sourceList').innerHTML = srcHtml;
+
+  // 経路別
+  const rt = {};
+  ins.forEach(x => { const k = x.route || '不明'; rt[k] = rt[k] || {in:0,out:0}; rt[k].in++; });
+  outs.forEach(x => { const k = x.route || '不明'; rt[k] = rt[k] || {in:0,out:0}; rt[k].out++; });
+  const rtHtml = Object.entries(rt).length ? Object.entries(rt).map(([k,v]) =>
+    `<tr><td>${k}</td><td>${v.in}</td><td>${v.out}</td></tr>`
+  ).join('') : `<tr><td colspan="3" style="text-align:center; color:#999;">データなし</td></tr>`;
+  document.getElementById('routeList').innerHTML = rtHtml;
+}
+
+// ========================================================
+// 設定
+// ========================================================
+function loadConfigUI() {
+  document.getElementById('cfgCapacity').value = state.config.capacity;
+  document.getElementById('cfgTarget').value = state.config.target;
+  document.getElementById('cfgInternal').value = state.config.internal;
+  document.getElementById('cfgWarn').value = state.config.warn;
+  document.getElementById('cfgAlert').value = state.config.alert;
+  document.getElementById('cfgVacantHours').value = state.config.vacantHours;
+  document.getElementById('cfgDashUrl').value = state.config.dashUrl || DEFAULT_DASH_URL;
+  document.getElementById('cfgRooms').value = state.rooms.join('\n');
+}
+function saveConfig() {
+  state.config.capacity = parseInt(document.getElementById('cfgCapacity').value) || 150;
+  state.config.target = parseFloat(document.getElementById('cfgTarget').value) || 94;
+  state.config.internal = parseFloat(document.getElementById('cfgInternal').value) || 95;
+  state.config.warn = parseFloat(document.getElementById('cfgWarn').value) || 94.5;
+  state.config.alert = parseFloat(document.getElementById('cfgAlert').value) || 94;
+  state.config.vacantHours = parseInt(document.getElementById('cfgVacantHours').value) || 48;
+  state.config.dashUrl = document.getElementById('cfgDashUrl').value.trim();
+  saveState();
+  renderAll();
+  alert('設定を保存しました');
+}
+
+// ========================================================
+// 入所ダッシュボード連携（検討会議「可」の取込）
+// ========================================================
+// ダッシュボード本体と同じGAS窓口(?action=list)を読むだけで、GAS側の改修は不要。
+const DEFAULT_DASH_URL = 'https://script.google.com/macros/s/AKfycbyJIFmpNvikwpFDyGsbkluzCcUsSyCZuESidVkg3aXY5Xzi-uqGoZnrIBfLM013G2QW8Q/exec';
+async function importFromDash() {
+  const url = (state.config.dashUrl || DEFAULT_DASH_URL).trim();
+  const st = document.getElementById('dashImportStatus');
+  if (!url) { st.textContent = '設定タブで連携URLを登録してください'; return; }
+  st.textContent = '読み込み中...';
+  let cases;
+  try {
+    const res = await fetch(url + '?action=list', { method: 'GET' });
+    const data = await res.json();
+    cases = Array.isArray(data.cases) ? data.cases : null;
+  } catch (e) { cases = null; }
+  if (!cases) { st.textContent = '接続できませんでした。URLとネットワークを確認してください。'; return; }
+
+  // 対象: 検討会議「可」・入所日なし・キャンセルなし
+  const eligible = cases.filter(c => c.kaigiResult === '可' && !c.nyushoDate && !c.cancelReason);
+  const eligibleIds = new Set(eligible.map(c => 'D-' + (c.recno || c.id)));
+
+  // 追加: まだ候補者にいない人
+  let added = 0;
+  eligible.forEach(c => {
+    const did = 'D-' + (c.recno || c.id);
+    if (state.candidates.some(x => x.id === did)) return;
+    state.candidates.push({
+      id: did,
+      source: (c.referrer || '') + (c.reftanto ? '（' + c.reftanto + '）' : ''),
+      wishDate: '',
+      priority: 'B',
+      judge: '可',
+      note: (c.name || '') + (c.kaigiDate ? ' 会議' + c.kaigiDate : '')
+    });
+    added++;
+  });
+
+  // 同期除外: 取込済み(D-)のうち、入所・キャンセル等で対象外になった人
+  let removed = 0;
+  state.candidates = state.candidates.filter(x => {
+    if (!String(x.id).startsWith('D-')) return true; // 手入力の候補者は触らない
+    if (eligibleIds.has(x.id)) return true;
+    removed++;
+    return false;
+  });
+
+  saveState();
+  renderCandidates();
+  renderDashboard();
+  st.textContent = '取込完了：追加' + added + '件、入所等による除外' + removed + '件、現在の対象' + eligible.length + '件（' + new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) + '）';
+}
+function saveRooms() {
+  const lines = document.getElementById('cfgRooms').value.split('\n').map(s => s.trim()).filter(Boolean);
+  state.rooms = lines;
+  saveState();
+  renderAll();
+  alert(`居室マスタを保存しました（${lines.length}室）`);
+}
+function autoGenerateRoomsInternal() {
+  // 実配置(2026年7月 亀橋様提供): 本館4階41床・本館3階42床・本館2階17床・新館3階25床・新館2階25床 = 150床
+  state.rooms = Object.values(BED_MASTER).flat();
+  state.config.capacity = state.rooms.length;
+}
+const BED_MASTER = {
+  "本館4階": ["401-1","401-2","401-3","401-4","402-1","402-2","402-3","402-4","403-1","403-2","403-3","403-4","405-1","405-2","405-3","405-4","406-1","406-2","406-3","406-4","407-1","407-2","407-3","407-4","408","410","411","412-1","412-2","413-1","413-2","413-3","413-4","415","416","417","418","420-1","420-2","421-1","421-2"],
+  "本館3階": ["301-1","301-2","301-3","301-4","302-1","302-2","302-3","302-4","303-1","303-2","303-3","303-4","305-1","305-2","305-3","305-4","306-1","306-2","306-3","306-4","307-1","307-2","307-3","307-4","308","310","311","312-1","312-2","313-1","313-2","313-3","313-4","315","316","317","318-1","318-2","320-1","320-2","321-1","321-2"],
+  "本館2階": ["201-1","201-2","201-3","201-4","202-1","202-2","202-3","202-4","203-1","203-2","203-3","203-4","205-1","205-2","205-3","205-4","206"],
+  "新館3階": ["351-1","351-2","351-3","351-4","352-1","352-2","352-3","352-4","353-1","353-2","353-3","353-4","355-1","355-2","355-3","355-4","356-1","356-2","357-1","357-2","358-1","358-2","360","361","362"],
+  "新館2階": ["251-1","251-2","251-3","251-4","252-1","252-2","252-3","252-4","253-1","253-2","253-3","253-4","255-1","255-2","255-3","255-4","256-1","256-2","257-1","257-2","258-1","258-2","260-1","260-2","261"]
+};
+function floorOfRoom(r) {
+  for (const [f, beds] of Object.entries(BED_MASTER)) if (beds.includes(r)) return f;
+  return "その他";
+}
+function autoGenerateRooms() {
+  autoGenerateRoomsInternal();
+  saveState();
+  loadConfigUI();
+  renderAll();
+  alert(`定員 ${state.config.capacity} 床の居室番号を自動生成しました`);
+}
+
+// ========================================================
+// エクスポート・インポート
+// ========================================================
+function exportData() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `oyake_bed_data_${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(event) {
+  const f = event.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const loaded = JSON.parse(e.target.result);
+      if (confirm('現在のデータを上書きします。よろしいですか？')) {
+        state = Object.assign({}, state, loaded);
+        saveState();
+        renderAll();
+        loadConfigUI();
+        alert('データをインポートしました');
+      }
+    } catch(err) {
+      alert('ファイル形式が不正です');
+    }
+  };
+  reader.readAsText(f);
+}
+function clearAllData() {
+  if (!confirm('本当にすべてのデータを削除しますか？この操作は取り消せません。')) return;
+  if (!confirm('もう一度確認します。すべての履歴・候補・設定が消えます。')) return;
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+
+// ========================================================
+// タブ切替
+// ========================================================
+function switchTab(page) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'rooms') renderRoomMap();
+  if (page === 'movements') { fillRoomSelect(); renderMovements(); document.getElementById('mvDate').value = today(); }
+  if (page === 'candidates') renderCandidates();
+  if (page === 'weekly') renderWeekly();
+  if (page === 'stats') { document.getElementById('statsMonth').value = today().slice(0,7); renderStats(); }
+  if (page === 'settings') loadConfigUI();
+}
+
+// ========================================================
+// まとめ描画
+// ========================================================
+function renderAll() {
+  computeOccupancy();
+  const activePage = document.querySelector('.tab.active').dataset.page;
+  switchTab(activePage);
+}
+
+// ========================================================
+// 初期化
+// ========================================================
+loadState();
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.page));
+document.getElementById('roomModal').onclick = e => { if (e.target.id === 'roomModal') closeModal(); };
+switchTab('dashboard');
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+
+<script>
+// ===================== 空床配信（施策③：ポータル公開） =====================
+function roomBaseOf(bed){ return bed.split('-')[0]; }
+function roomTypeOf(base){
+  const beds = state.rooms.filter(r=>roomBaseOf(r)===base).length;
+  return beds>=4?'多床室':(beds===2?'2人室':'個室');
+}
+function ensureReportState(){
+  if(!state.genderCond) state.genderCond={};
+  if(state.reportSSNote===undefined) state.reportSSNote='';
+  if(!state.reportGasUrl) state.reportGasUrl='https://script.google.com/macros/s/AKfycbxjbbVFhCbTbmab52LlUEqXbaZWCRuaIG1ANxVx5iqL8rwJSpHlkVpozc0blqPCm9q0pQ/exec';
+  if(state.reportAdminKey===undefined) state.reportAdminKey='';
+}
+function vacantSummary(){
+  ensureReportState();
+  const occ=computeOccupancy();
+  const rows=[];
+  state.rooms.forEach(b=>{
+    const o=occ[b];
+    if(o && o.status==='vacant' && !o.reserved){
+      const base=roomBaseOf(b);
+      rows.push({bed:b, base, type:roomTypeOf(base), floor:floorOfRoom(b), since:o.since});
+    }
+  });
+  return rows;
+}
+function genderOf(base,type){
+  if(type==='個室') return 'どちらでも';
+  return state.genderCond[base]||'確認中';
+}
+function renderReport(){
+  ensureReportState();
+  const rows=vacantSummary();
+  const bases=[...new Set(rows.filter(r=>r.type!=='個室').map(r=>r.base))].sort();
+  const g=document.getElementById('rgGender');
+  if(!bases.length){ g.innerHTML='<p style="color:#666">多床室・2人室に空床はありません。</p>'; }
+  else g.innerHTML=bases.map(base=>{
+    const type=roomTypeOf(base), n=rows.filter(r=>r.base===base).length;
+    const cur=state.genderCond[base]||'確認中';
+    const opts=['男性','女性','どちらでも','確認中'].map(o=>`<option ${o===cur?'selected':''}>${o}</option>`).join('');
+    return `<div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid #eee">
+      <b style="min-width:70px">${base}号室</b><span style="min-width:60px;color:#666">${type}</span>
+      <span style="min-width:70px;color:#666">空床${n}床</span>
+      <select onchange="state.genderCond['${base}']=this.value;saveState();refreshPreview()">${opts}</select></div>`;
+  }).join('');
+  document.getElementById('rgSS').value=state.reportSSNote;
+  document.getElementById('rgSS').oninput=e=>{state.reportSSNote=e.target.value;saveState();refreshPreview();};
+  document.getElementById('rgGas').value=state.reportGasUrl;
+  document.getElementById('rgGas').oninput=e=>{state.reportGasUrl=e.target.value.trim();saveState();};
+  document.getElementById('rgKey').value=state.reportAdminKey;
+  document.getElementById('rgKey').oninput=e=>{state.reportAdminKey=e.target.value.trim();saveState();};
+  refreshPreview();
+}
+function buildSnapshot(){
+  const rows=vacantSummary();
+  const items=['多床室','2人室','個室'].map(tp=>{
+    const list=rows.filter(r=>r.type===tp && genderOf(r.base,r.type)!=='確認中');
+    const byG={};
+    list.forEach(r=>{const gd=genderOf(r.base,r.type);byG[gd]=(byG[gd]||0)+1;});
+    return {type:tp, count:list.length, genders:byG};
+  });
+  const d=new Date();
+  const youbi='日月火水木金土'[d.getDay()];
+  const ts=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${youbi}） ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return {ts, items, ss: state.reportSSNote};
+}
+function refreshPreview(){
+  const snap=buildSnapshot();
+  const el=document.getElementById('rgPreview');
+  el.style.display='block';
+  el.textContent='【公開内容プレビュー】 '+snap.ts+'\n'+
+    snap.items.map(it=>{
+      const g=Object.entries(it.genders).map(([k,v])=>k+v+'床').join('・')||'―';
+      return `・${it.type}：${it.count}床（${it.count?g:'空きなし'}）`;
+    }).join('\n')+
+    (snap.ss?('\nSS補足：'+snap.ss):'')+
+    '\n※「確認中」の床は公開に含まれません。性別条件を設定すると公開数に反映されます。';
+}
+async function publishVacancy(){
+  ensureReportState();
+  const st=document.getElementById('rgStatus');
+  if(!state.reportGasUrl||!state.reportAdminKey){ st.textContent='⚠ 先にGASのURLと公開キーを設定してください。'; st.style.color='#B71C1C'; return; }
+  st.textContent='公開中…'; st.style.color='#666';
+  try{
+    const res=await fetch(state.reportGasUrl,{method:'POST',
+      body:JSON.stringify({action:'publishVacancy',adminKey:state.reportAdminKey,snapshot:buildSnapshot()})});
+    const j=await res.json();
+    if(j.ok){ st.textContent='✅ 公開しました（'+buildSnapshot().ts+'）。ポータル側は即時反映されます。'; st.style.color='#2E7D32'; }
+    else{ st.textContent='⚠ 公開に失敗：'+(j.error||'不明なエラー'); st.style.color='#B71C1C'; }
+  }catch(e){ st.textContent='⚠ 通信に失敗しました。GASのURL・デプロイ設定（全員アクセス可）を確認してください。'; st.style.color='#B71C1C'; }
+}
+function openPrintReport(){
+  const rows=vacantSummary();
+  const byType={'多床室':[], '2人室':[], '個室':[]};
+  rows.forEach(r=>byType[r.type].push(r));
+  const d=new Date();
+  const youbi='日月火水木金土'[d.getDay()];
+  const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${youbi}）`;
+  const trows=['多床室','2人室','個室'].map(tp=>{
+    const list=byType[tp];
+    const byG={};
+    list.forEach(r=>{const g=genderOf(r.base,r.type);byG[g]=(byG[g]||0)+1;});
+    const gtxt=list.length?Object.entries(byG).map(([g,n])=>`${g} ${n}床`).join('　'):'―';
+    return `<tr><td class="tp">${tp}</td><td class="num">${list.length||0}床</td><td>${gtxt}</td></tr>`;
+  }).join('');
+  const ss=state.reportSSNote?`<div class="ssbox"><b>ショートステイ・補足</b><br>${state.reportSSNote.replace(/\n/g,'<br>')}</div>`:'';
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>空床情報 ${dateStr}</title>
+  <style>body{font-family:"Yu Gothic",sans-serif;color:#22302E;margin:28px;font-size:14px;line-height:1.7}
+  .hd{background:#004D40;color:#fff;padding:14px 18px;border-radius:8px;display:flex;justify-content:space-between}
+  .hd h1{margin:0;font-size:20px}
+  table{width:100%;border-collapse:collapse;margin:18px 0}
+  th{background:#E0F2F1;color:#004D40;border:1px solid #B8CCC8;padding:8px}
+  td{border:1px solid #B8CCC8;padding:8px;text-align:center}
+  td.tp{font-weight:bold;color:#00796B}td.num{font-size:20px;font-weight:bold;color:#004D40}
+  .ssbox{background:#FFF3E0;border-left:4px solid #E65100;padding:10px 14px;margin:14px 0}
+  .sla{background:#E0F2F1;border-radius:8px;padding:12px 16px}
+  @media print{.noprint{display:none}}</style></head><body>
+  <div class="hd"><h1>おおやけの里　空床情報</h1><span>${dateStr}時点</span></div>
+  <table><thead><tr><th>居室種別</th><th>空床数</th><th>受入可能な性別</th></tr></thead><tbody>${trows}</tbody></table>
+  ${ss}
+  <div class="sla"><b>お申し込み・ご相談：</b>面接日は当日中にご提示、受入可否は48時間以内にご回答します。詳しくは空床ポータルまたはお電話で。</div>
+  <div class="noprint" style="margin-top:16px"><button onclick="window.print()" style="padding:10px 20px">印刷 / PDF保存</button></div>
+  </body></html>`);
+  w.document.close();
+}
+document.querySelectorAll('.tab').forEach(t=>{
+  if(t.dataset.page==='report') t.addEventListener('click',renderReport);
+});
+
+/* ===================== 規定値（初期データ）の書き出し ===================== */
+async function exportSeededHtml(){
+  const st=document.getElementById('seedStatus');
+  st.textContent='書き出し中…';
+  try{
+    const res=await fetch(location.href,{cache:'no-store'});
+    if(!res.ok) throw new Error('fetch失敗');
+    let html=await res.text();
+    const seedJs='const SEED_STATE = '+JSON.stringify(state)+'; /*SEED*/';
+    const re=/const SEED_STATE = [\s\S]*?\/\*SEED\*\//;
+    if(!re.test(html)) throw new Error('置換位置が見つかりません');
+    html=html.replace(re,seedJs);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+    a.download='oyake_bed_management_fix.html';
+    a.click();
+    st.textContent='✅ 書き出しました（'+new Date().toLocaleString('ja-JP')+'時点のデータ入り）。ダウンロードされたファイルでGitHub上のファイルを差し替えてください。';
+  }catch(e){
+    // file:// で開いている場合など fetch が使えないとき: JSONを書き出して案内
+    const a=document.createElement('a');
+    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(state));
+    a.download='bed_state_seed.json';
+    a.click();
+    st.textContent='⚠ この開き方ではHTML書き出しができないため、データ(JSON)のみ保存しました。GitHub Pages上のURLで開いて再実行するとHTMLごと書き出せます。';
+  }
+}
+function applySeed(){
+  if(!SEED_STATE){ alert('このファイルには規定値が入っていません。「規定値として保存」で書き出したファイルで使えます。'); return; }
+  if(!confirm('現在のデータを破棄し、規定値のデータに戻します。よろしいですか？')) return;
+  state=Object.assign(state,JSON.parse(JSON.stringify(SEED_STATE)));
+  saveState();
+  location.reload();
+}
+
+</script>
+</body>
+</html>
