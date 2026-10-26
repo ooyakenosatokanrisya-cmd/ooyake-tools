@@ -1,0 +1,819 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>おおやけの里 入所料金シミュレーション</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDGothic:wght@400;700&display=swap">
+<style>
+/* レイアウト: 上に法人の帯、下は「入力（左）→結果（右・追従）」の2列。スマホでは1列。最下部に職員用の加算設定。 */
+:root{
+  --brand:#0099CC; --brand-ink:#006B8F; --brand-soft:#E3F3FA;
+  --bg:#F6F9FB; --panel:#FFFFFF; --fg:#1C2A33; --muted:#5B6B76; --line:#D6E2E9;
+  --warn:#B45309; --warn-soft:#FEF3E2; --good:#0F766E; --danger:#B42318;
+  --f-body:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --f-num:"BIZ UDGothic","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --brand:#38B6E0; --brand-ink:#7FD3F0; --brand-soft:#0F2E3B;
+  --bg:#0E161B; --panel:#152129; --fg:#E4EDF2; --muted:#9AAAB4; --line:#2A3A44;
+  --warn:#F5B451; --warn-soft:#3A2A12; --good:#5EC9BC; --danger:#F7857A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --brand:#38B6E0; --brand-ink:#7FD3F0; --brand-soft:#0F2E3B;
+  --bg:#0E161B; --panel:#152129; --fg:#E4EDF2; --muted:#9AAAB4; --line:#2A3A44;
+  --warn:#F5B451; --warn-soft:#3A2A12; --good:#5EC9BC; --danger:#F7857A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.7}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.band{background:var(--brand);color:#fff}
+header.band .wrap{display:flex;align-items:center;gap:14px;padding-block:12px;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.12em}
+.mark svg{width:30px;height:30px}
+.slogan{font-size:13px;opacity:.95;margin-left:auto}
+.titlebar .wrap{padding-block:22px 6px}
+h1{font-size:clamp(22px,4vw,30px);margin:0;text-wrap:balance}
+.lead{color:var(--muted);margin:4px 0 0;font-size:14px}
+main.wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;padding-block:16px 24px;align-items:start}
+@media (max-width:860px){main.wrap{grid-template-columns:minmax(0,1fr)}}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+.inputs{display:grid;gap:14px}
+.step h2{font-size:16px;margin:0 0 10px;display:flex;gap:10px;align-items:baseline}
+.step h2 .no{font-family:var(--f-num);color:var(--brand-ink);font-size:14px}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--panel);min-width:64px;text-align:center;line-height:1.35}
+.seg label small{display:block;font-size:12px;color:var(--muted);font-family:var(--f-num)}
+.seg input:checked+label{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.seg input:focus-visible+label{outline:3px solid var(--brand);outline-offset:2px}
+.seg input:disabled+label{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;font-size:14px}
+select,input[type=number],input[type=text],textarea{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg);min-width:0}
+input[type=number]{width:7em;font-family:var(--f-num)}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand);flex:none}
+/* この方に付く加算 */
+.klist{display:grid;gap:0;margin-top:4px}
+.kitem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kitem:last-child{border-bottom:none}
+.kitem .p{display:block;font-family:var(--f-num);color:var(--muted);font-size:12px}
+.kitem.off{opacity:.45}
+.kitem .qty{display:flex;align-items:center;gap:4px;font-size:13px}
+.kitem .qty input{width:5em}
+.tag{display:inline-block;font-size:11px;border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.tag.chkme{background:var(--warn-soft);color:var(--warn)}
+.empty{font-size:14px;color:var(--muted);padding:6px 0}
+/* 結果 */
+.result{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:grid;gap:14px}
+@media (max-width:860px){.result{position:static}}
+.total{border:2px solid var(--brand);border-radius:12px;background:var(--panel);padding:18px}
+.total .k{font-size:14px;color:var(--muted)}
+.total .v{font-family:var(--f-num);font-size:clamp(34px,6vw,44px);font-weight:700;line-height:1.2}
+.total .v small{font-size:18px;margin-left:4px}
+.total .sub{font-size:14px;margin-top:6px}
+.saving{display:inline-block;background:var(--brand-soft);color:var(--brand-ink);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.n,th.n{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sum td{font-weight:700;border-top:2px solid var(--fg);border-bottom:none}
+tr.cut td{color:var(--good)}
+tr.grp td{background:var(--brand-soft);font-weight:700;font-size:13px}
+tr.ksub td{font-size:13px;color:var(--muted);padding-left:18px}
+tr.cur td{background:var(--brand-soft);font-weight:700}
+.tbl{overflow-x:auto}
+h3{font-size:15px;margin:0 0 8px}
+.premise p{font-size:13px;color:var(--muted);margin:0 0 8px}
+.premise p strong{color:var(--fg)}
+button{font:inherit;cursor:pointer}
+.btn{font-weight:700;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 16px}
+.btn.ghost{background:transparent;color:var(--brand-ink);border:1px solid var(--brand)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn:focus-visible{outline:3px solid var(--brand-ink);outline-offset:2px}
+.msg{font-size:13px;color:var(--good);margin-left:6px}
+textarea{width:100%;font-size:12px;font-family:var(--f-num)}
+/* 職員用：加算の初期設定 */
+.settings{padding-block:0 48px}
+.settings > details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+.settings summary{cursor:pointer;font-weight:700;font-size:16px;color:var(--brand-ink)}
+.settings .intro{font-size:13px;color:var(--muted);margin:10px 0 4px;max-width:70ch}
+.ks{display:grid;gap:0;margin-top:8px}
+.ks-item{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.ks-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ks-top input[type=text]{flex:1 1 240px}
+.ks-grid{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end;font-size:13px}
+.ks-grid .field{font-size:12px;color:var(--muted)}
+.ks-grid input[type=number]{width:6em}
+.ks-grid .md input{width:4.5em}
+.ks-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:2px solid var(--line)}
+.io{margin-top:14px;display:grid;gap:8px}
+.io textarea{height:7em}
+.mini{font-size:12px;padding:4px 10px}
+/* ご家族向け印刷用紙（画面では紙のプレビュー、印刷時はこれだけ出す）。紙は両テーマとも白地・黒字に固定 */
+/* 白黒印刷が主：情報は黒の線・太さ・塗りの濃淡で区別し、青はロゴと細い線だけ（灰色になっても崩れない） */
+:root{--paper:#FFFFFF; --ink:#000000; --ink2:#333333; --rule:#666666; --fill:#E4E4E4; --fill2:#F2F2F2; --pbrand:#0099CC}
+.printarea{padding-block:0 24px}
+.printarea > .row{display:flex}
+.paperbox.bw .paper{filter:grayscale(1)}
+.paperbox{overflow-x:auto;background:var(--line);border-radius:10px;padding:16px}
+.paper{background:var(--paper);color:var(--ink);width:100%;max-width:794px;min-width:600px;margin:0 auto;padding:36px 40px;font-size:13px;line-height:1.6;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.paper .ph{display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:8px;box-shadow:0 3px 0 -1px var(--paper),0 4px 0 0 var(--pbrand)}
+.paper .ph svg{width:34px;height:34px;flex:none}
+.paper .ph .org{font-size:12px;line-height:1.4}
+.paper .ph .org b{font-size:15px;display:block}
+.paper .ph .sl{margin-left:auto;font-size:10px;color:var(--ink2);text-align:right;white-space:nowrap}
+.paper h1{font-size:20px;margin:14px 0 2px;text-align:center;letter-spacing:.08em}
+.paper .meta{display:flex;justify-content:space-between;align-items:flex-end;margin:10px 0 8px;gap:12px}
+.paper .atena{font-size:15px;border-bottom:1px solid var(--ink);min-width:16em;padding-bottom:2px;display:flex;justify-content:space-between;gap:1em}
+.paper .date{font-size:12px;color:var(--ink2);white-space:nowrap}
+.paper table{font-size:12.5px;width:100%;border-collapse:collapse}
+.paper th,.paper td{border:1px solid var(--rule);padding:4px 8px;color:var(--ink)}
+.paper table{border:1.5px solid var(--ink)}
+.paper th{background:var(--fill);font-weight:700;text-align:left;white-space:nowrap}
+.paper td.n{text-align:right;font-family:var(--f-num);white-space:nowrap}
+.paper .cond td{width:25%}
+.paper .bigtotal{display:flex;justify-content:space-between;align-items:center;border:2.5px solid var(--ink);outline:1px solid var(--ink);outline-offset:2px;padding:8px 16px;margin:12px 3px}
+.paper .bigtotal .k{font-size:14px;font-weight:700}
+.paper .bigtotal .k small{display:block;font-weight:400;font-size:11px;color:var(--ink2)}
+.paper .bigtotal .v{font-family:var(--f-num);font-size:28px;font-weight:700}
+.paper .bigtotal .v small{font-size:14px;margin-left:2px}
+.paper h3{font-size:13px;margin:12px 0 4px;padding:0 0 2px 0;border-bottom:1px solid var(--ink);color:var(--ink);display:flex;align-items:center;gap:6px}
+.paper h3::before{content:"";width:9px;height:9px;background:var(--ink);flex:none}
+.paper tr.g td{background:var(--fill);font-weight:700;border-bottom:1.5px solid var(--ink)}
+.paper tr.t td{font-weight:700;border-top:2px solid var(--ink)}
+.paper tr.c td{font-weight:700;background:var(--fill2);border-top:1.5px solid var(--ink)}
+.paper tr.sel td{font-weight:700;background:var(--fill2)}
+.paper tr.sel td:first-child::before{content:"▶ "}
+.paper tr.cut td{color:var(--ink)}
+.paper .knote{font-size:10.5px;color:var(--ink2);margin:3px 0 0}
+.paper ul{margin:2px 0 0;padding-left:1.3em;font-size:11.5px}
+.paper li{margin:1px 0}
+.paper .pf{display:flex;justify-content:space-between;gap:12px;margin-top:12px;padding-top:8px;border-top:2px solid var(--ink);font-size:12px}
+.paper .pf .blank{display:inline-block;min-width:9em;border-bottom:1px solid var(--ink)}
+.paper .src{font-size:10px;color:var(--ink2);margin-top:4px}
+.pcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px}
+@page{size:A4 portrait;margin:10mm}
+@media print{
+  :root{padding:0!important}
+  body{background:#fff!important}
+  body > *{display:none!important}
+  body > .printarea{display:block!important;padding:0!important;max-width:none!important}
+  .printarea > .row,.printarea > .hint{display:none!important}
+  .paperbox.bw .paper{filter:none}
+  .paperbox{background:none;padding:0;overflow:visible}
+  .paper{box-shadow:none;max-width:none;min-width:0;padding:0;font-size:10.5pt}
+  .paper{font-size:10pt;line-height:1.45}
+  .paper h1{margin:8px 0 0;font-size:17pt}
+  .paper .meta{margin:6px 0}
+  .paper th,.paper td{padding:2.5px 7px}
+  .paper .bigtotal{margin:8px 0;padding:6px 14px}
+  .paper h3{margin:8px 0 3px}
+  .paper ul{font-size:9.5pt}
+  .paper .pf{margin-top:8px;padding-top:6px}
+  .paper *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="band">
+  <div class="wrap">
+    <div class="mark">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff"/><path d="M16 6 L25 26 H21 L19.2 21.6 H12.8 L11 26 H7 Z M14 18.4 H18 L16 13.4 Z" fill="#0099CC"/></svg>
+      <span>AISEIKAI</span>
+    </div>
+    <div>一般社団法人愛生会　介護老人保健施設おおやけの里</div>
+    <div class="slogan">人々を幸せに、社会をもっと豊かに、進化・創造・オーバーラップ</div>
+  </div>
+</header>
+<div class="titlebar"><div class="wrap">
+  <h1>入所料金シミュレーション</h1>
+  <p class="lead">2026年8月1日の利用料金表（加算は2026年6月1日の表）にもとづく1か月の目安です。実際の請求額とは差が出ます。</p>
+</div></div>
+
+<main class="wrap">
+  <div class="inputs">
+    <section class="card step">
+      <h2><span class="no">1</span>要介護度</h2>
+      <div class="seg" id="kaigo"></div>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">2</span>介護保険の負担割合</h2>
+      <div class="seg" id="wari"></div>
+      <p class="hint">介護保険負担割合証に書かれている割合です。2割・3割の方は、食費・居住費の軽減（負担限度額認定証）の対象になりません。</p>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">3</span>お部屋</h2>
+      <div class="seg" id="room"></div>
+      <p class="hint">2人室は多床室、個室は従来型個室の料金に、特別な室料（1日あたり）を足した金額になります。</p>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">4</span>負担限度額認定証の段階（食費・居住費の軽減）</h2>
+      <div class="seg" id="dankai"></div>
+      <p class="hint">京都市から届く「負担限度額認定証」に書かれた段階を選びます。お持ちでない方は「認定証なし」です。</p>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">5</span>高額介護サービス費の区分（介護保険の自己負担の上限）</h2>
+      <div class="field"><select id="cap" aria-label="高額介護サービス費の区分"></select></div>
+      <p class="hint">認定証の段階を選ぶと、合う区分に自動で切り替わります。認定証がない方は、世帯の課税の状況で選びます。上限は世帯の合計で決まるため、同じ世帯にほかに介護保険サービスを使う方がいると変わります。</p>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">6</span>いつの月を計算するか</h2>
+      <div class="seg" id="month"></div>
+      <div class="row" style="margin-top:10px">
+        <label class="field">その月の入所日数<input type="number" id="days" min="1" max="31" value="30"></label>
+      </div>
+      <div id="maeBox" hidden style="margin-top:12px">
+        <div class="field" style="margin-bottom:6px">入所前にいた場所（初期加算の区分が決まります）</div>
+        <div class="seg" id="mae"></div>
+        <p class="hint">急性期病院から30日以内の入所は初期加算Ⅰ、それ以外は初期加算Ⅱで計算します。</p>
+      </div>
+      <p class="hint">「入所した月」を選ぶと、「入所した月のみ」の加算（初期加算など）が入ります。</p>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">7</span>選んで使う費用</h2>
+      <div class="inputs" style="gap:8px">
+        <label class="chk"><input type="checkbox" id="nichiyo" checked>日用品費（1日158円・おしぼり、ペーパーなど）</label>
+        <label class="chk"><input type="checkbox" id="goraku" checked>娯楽教養費（1日158円・レクリエーション、行事などの材料費）</label>
+        <label class="chk"><input type="checkbox" id="oyatsu" checked>おやつ（1日150円）</label>
+        <div class="row">
+          <label class="field">持ち込む電気器具の数（1器具1日55円）<input type="number" id="denki" min="0" max="10" value="0"></label>
+          <label class="field">理美容代（1か月・実費）<input type="number" id="biyo" min="0" step="100" value="0"></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card step">
+      <h2><span class="no">8</span>この方に付く加算</h2>
+      <p class="hint" style="margin:0 0 6px">体制加算は全員に必ず付くため、外せません。それ以外は「加算の初期設定」の内容で始まり、この方だけ変える場合はここで付け外しします。</p>
+      <div class="klist" id="klist"></div>
+      <div class="row" style="margin-top:10px">
+        <label class="field">一覧にない加算（1か月の自己負担額・円）<input type="number" id="other" min="0" step="10" value="0"></label>
+        <button type="button" class="btn ghost mini" id="caseReset">初期設定に戻す</button>
+      </div>
+    </section>
+  </div>
+
+  <aside class="result" aria-live="polite">
+    <div class="total">
+      <div class="k" id="totalLabel">1か月の目安（30日）</div>
+      <div class="v"><span id="total">0</span><small>円</small></div>
+      <div class="sub" id="perDay"></div>
+      <div id="saving"></div>
+    </div>
+
+    <section class="card">
+      <h3>内訳</h3>
+      <div class="tbl"><table id="breakdown"></table></div>
+    </section>
+
+    <section class="card">
+      <h3>お部屋ごとの比較（同じ条件で計算）</h3>
+      <div class="tbl"><table id="compare"></table></div>
+    </section>
+
+    <section class="card premise">
+      <h3>計算の前提</h3>
+      <p><strong>概算です。</strong>料金表は項目ごとに円に直した金額を足しているため、実際の請求とは10円未満の差が出ることがあります。介護職員等処遇改善加算は、介護保険の自己負担額の9.7%として足しています。</p>
+      <p><strong>高額介護サービス費</strong>は、介護保険の自己負担（加算と処遇改善加算を含む）にだけ上限がかかります。食費・居住費・室料・日用品などは対象外です。京都市の受領委任払いを申請すると、窓口では上限額までのお支払いで済みます。申請しない場合は、いったん全額を支払い、約3か月後に払い戻しを受けます。</p>
+      <p><strong>入っていないもの</strong>は、外泊した日の費用、入院、薬の自己負担、退所時の加算、エンゼルセットなどです。</p>
+      <p><strong>出典</strong>：介護老人保健施設おおやけの里「利用料金表」（基本料金 2026年8月1日、加算料金 2026年6月1日）、京都市「高額介護サービス費」ページ（2026年10月24日閲覧）。</p>
+    </section>
+
+    <section class="card">
+      <h3>ご家族向けに印刷</h3>
+      <div class="inputs" style="gap:10px">
+        <label class="field">宛名（任意・空欄なら手書き用の線）<input type="text" id="pAtena" placeholder="例：山科　花子"></label>
+        <div class="row">
+          <label class="field">担当者<input type="text" id="pTanto" placeholder="空欄なら手書き用の線"></label>
+          <label class="field">電話番号<input type="text" id="pTel" placeholder="075-000-0000"></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="pCompare" checked>お部屋ごとの比較を載せる</label>
+        <div><button class="btn" id="printBtn" type="button">印刷する（A4縦1枚）</button></div>
+        <p class="hint" style="margin:0">担当者と電話番号はこの端末に保存されます。宛名は保存しません。下に印刷イメージが出ます。</p>
+      </div>
+    </section>
+
+    <section class="card copybox">
+      <h3>説明メモ</h3>
+      <p class="hint" style="margin-top:0">計算結果を文章にしてコピーします。ケアマネへのメールや記録に貼り付けられます。</p>
+      <button class="btn" id="copyBtn" type="button">説明メモをコピー</button><span class="msg" id="copyMsg"></span>
+      <textarea id="copyText" readonly hidden aria-label="説明メモ" style="height:9em;margin-top:8px"></textarea>
+    </section>
+  </aside>
+</main>
+
+<div class="wrap printarea">
+  <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0;font-size:16px">印刷イメージ（A4縦）</h2>
+    <label class="chk" style="font-size:14px"><input type="checkbox" id="bwPrev" checked>白黒で表示する</label></div>
+  <div class="paperbox bw" id="paperbox"><div class="paper" id="paper"></div></div>
+</div>
+
+<div class="wrap settings">
+  <details id="settingsBox">
+    <summary>加算の初期設定（職員用）</summary>
+    <p class="intro">ここで決めた内容が、上の「この方に付く加算」の一覧と、最初にチェックが入る加算になります。金額は料金表の1割・2割・3割の欄の数字です。変更はこの端末のブラウザに自動で保存されます。別の端末で同じ設定を使うときは、下の「設定の書き出し・読み込み」を使ってください。</p>
+    <p class="intro"><span class="tag chkme" style="margin-left:0">料金表と照合</span> が付いた加算は、料金表の項目名と金額の並びが読み取りにくかったため、単位数から当てはめた金額です。料金表と照らし合わせ、正しければ「照合済み」にチェックを入れてください。</p>
+    <div class="ks" id="ks"></div>
+    <div class="ks-actions">
+      <button type="button" class="btn" id="ksAdd">加算を追加</button>
+      <span class="msg" id="ksMsg"></span>
+      <span style="flex:1"></span>
+      <button type="button" class="btn danger" id="ksReset">最初の設定に戻す</button>
+      <span id="ksResetConfirm" hidden>
+        <span style="font-size:13px">保存した設定を消して、最初の設定に戻します。</span>
+        <button type="button" class="btn danger mini" id="ksResetYes">戻す</button>
+        <button type="button" class="btn ghost mini" id="ksResetNo">やめる</button>
+      </span>
+    </div>
+    <div class="io">
+      <h3 style="margin:8px 0 0">設定の書き出し・読み込み</h3>
+      <p class="intro" style="margin:0">「書き出し」で設定の文字をコピーし、別の端末で貼り付けて「読み込む」を押すと、同じ設定になります。</p>
+      <textarea id="ioText" aria-label="設定の文字"></textarea>
+      <div class="row">
+        <button type="button" class="btn ghost" id="ioExport">書き出し（コピー）</button>
+        <button type="button" class="btn ghost" id="ioImport">貼り付けた設定を読み込む</button>
+        <span class="msg" id="ioMsg"></span>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+  // ===== 料金データ（円/日、[1割,2割,3割]） 出典：おおやけの里 利用料金表 2026年8月1日・6月1日 =====
+  var SERVICE = { // 介護保健施設サービス費(Ⅰ)在宅強化型
+    tashou:   {1:[911,1821,2731],2:[990,1980,2969],3:[1060,2120,3179],4:[1121,2241,3361],5:[1176,2352,3527]},
+    koshitsu: {1:[824,1647,2471],2:[902,1804,2706],3:[970,1940,2910],4:[1030,2059,3088],5:[1087,2174,3261]}
+  };
+  var DAILY_KASAN = [ // 全員に毎日かかる加算（基本料金表に記載）
+    {name:'夜勤職員配置加算', v:[25,50,75]},
+    {name:'在宅復帰・在宅療養支援機能加算（Ⅱ）', v:[54,107,160]},
+    {name:'サービス提供体制強化加算（Ⅱ）', v:[19,38,57]}
+  ];
+  var SHOGU_RATE = 0.097;
+  var RES = { // 居住費（円/日）料金表どおり
+    tashou:   {none:560, d1:0,   d2:430, d3a:430,  d3b:530},
+    koshitsu: {none:1730,d1:550, d2:550, d3a:1370, d3b:1470}
+  };
+  var FOOD = {none:1700,d1:300,d2:390,d3a:680,d3b:1420};
+  var ROOMS = [
+    {id:'tashou', label:'多床室', sub:'4人部屋', base:'tashou', fee:0},
+    {id:'n2b', label:'2人室B', sub:'+1,650円', base:'tashou', fee:1650},
+    {id:'n2a', label:'2人室A', sub:'+2,200円', base:'tashou', fee:2200},
+    {id:'n2c', label:'2人室C', sub:'+2,750円', base:'tashou', fee:2750},
+    {id:'ka', label:'個室A', sub:'+3,300円', base:'koshitsu', fee:3300},
+    {id:'kb', label:'個室B', sub:'+3,850円', base:'koshitsu', fee:3850}
+  ];
+  var DANKAI = [
+    {id:'none',label:'認定証なし'},{id:'d1',label:'第1段階'},{id:'d2',label:'第2段階'},
+    {id:'d3a',label:'第3段階①'},{id:'d3b',label:'第3段階②'}
+  ];
+  var CAPS = [ // 出典：京都市 高額介護サービス費
+    {id:'p15', amt:15000, label:'15,000円（個人）… 生活保護、第1段階、第2段階など'},
+    {id:'h246',amt:24600, label:'24,600円（世帯）… 市民税非課税世帯（第3段階など）'},
+    {id:'h444',amt:44400, label:'44,400円（世帯）… 課税世帯・課税所得380万円未満'},
+    {id:'h930',amt:93000, label:'93,000円（世帯）… 課税所得380万円以上690万円未満'},
+    {id:'h1401',amt:140100,label:'140,100円（世帯）… 課税所得690万円以上'}
+  ];
+  var DAY_ITEMS = {nichiyo:158, goraku:158, oyatsu:150, denki:55};
+
+  // ===== 加算の初期設定（最初の状態） =====
+  // unit: day=1日ごと / month=月1回 / once=入所時1回 / count=回数・日数を入力
+  // scope: all=毎月 / first=入所した月のみ。maxDays: 1日ごとの上限日数（初期加算は30）
+  // verified: false は単位数から当てはめた金額（料金表と照合が必要）
+  var KASAN_DEFAULT = [
+    {name:'初期加算Ⅱ', v:[32,63,94], unit:'day', scope:'first', maxDays:30, on:true, verified:true, shoki:'other'},
+    {name:'初期加算Ⅰ', v:[63,126,189], unit:'day', scope:'first', maxDays:30, on:true, verified:true, shoki:'acute'},
+    {name:'安全対策体制加算', v:[21,42,63], unit:'once', scope:'first', on:true, verified:true, fixed:true},
+    {name:'入所前後訪問指導加算（Ⅰ）', v:[471,941,1411], unit:'once', scope:'first', on:false, verified:false},
+    {name:'栄養マネジメント強化加算', v:[12,23,35], unit:'day', scope:'all', on:false, verified:false},
+    {name:'認知症専門ケア加算（Ⅱ）', v:[5,9,13], unit:'day', scope:'all', on:true, verified:true, fixed:true},
+    {name:'経口移行加算', v:[30,59,88], unit:'day', scope:'all', on:false, verified:false},
+    {name:'療養食加算（1食ごと）', v:[7,13,19], unit:'count', scope:'all', on:false, verified:true, qtyLabel:'食'},
+    {name:'短期集中リハビリ実施加算（Ⅰ）', v:[270,540,809], unit:'count', scope:'all', on:false, verified:true, qtyLabel:'日'},
+    {name:'短期集中リハビリ実施加算（Ⅱ）', v:[209,418,627], unit:'count', scope:'all', on:false, verified:true, qtyLabel:'日'},
+    {name:'認知症短期集中リハビリ実施加算（Ⅰ）', v:[251,502,753], unit:'count', scope:'all', on:false, verified:true, qtyLabel:'日'},
+    {name:'認知症短期集中リハビリ実施加算（Ⅱ）', v:[209,418,627], unit:'count', scope:'all', on:false, verified:true, qtyLabel:'日'},
+    {name:'口腔衛生管理加算（Ⅱ）', v:[115,230,345], unit:'month', scope:'all', on:false, verified:true},
+    {name:'経口維持加算（Ⅰ）', v:[418,836,1254], unit:'month', scope:'all', on:false, verified:false},
+    {name:'経口維持加算（Ⅱ）', v:[105,209,314], unit:'month', scope:'all', on:false, verified:false},
+    {name:'自立支援促進加算', v:[314,627,941], unit:'month', scope:'all', on:true, verified:false, fixed:true},
+    {name:'協力医療機関連携加算（Ⅰ）', v:[53,105,157], unit:'month', scope:'all', on:true, verified:false, fixed:true},
+    {name:'科学的介護推進体制加算（Ⅱ）', v:[63,126,189], unit:'month', scope:'all', on:true, verified:false, fixed:true},
+    {name:'リハビリテーションマネジメント計画書情報加算（Ⅰ）', v:[56,111,166], unit:'month', scope:'all', on:false, verified:false},
+    {name:'リハビリテーションマネジメント計画書情報加算（Ⅱ）', v:[35,69,104], unit:'month', scope:'all', on:false, verified:false},
+    {name:'褥瘡マネジメント加算（Ⅰ）', v:[4,7,10], unit:'month', scope:'all', on:false, verified:false},
+    {name:'褥瘡マネジメント加算（Ⅱ）', v:[14,27,41], unit:'month', scope:'all', on:false, verified:false},
+    {name:'排せつ支援加算（Ⅰ）', v:[11,21,32], unit:'month', scope:'all', on:false, verified:false},
+    {name:'排せつ支援加算（Ⅱ）', v:[16,32,47], unit:'month', scope:'all', on:false, verified:false},
+    {name:'排せつ支援加算（Ⅲ）', v:[21,42,63], unit:'month', scope:'all', on:false, verified:false},
+    {name:'生産性向上推進体制加算（Ⅰ）', v:[105,209,314], unit:'month', scope:'all', on:false, verified:false},
+    {name:'生産性向上推進体制加算（Ⅱ）', v:[11,21,32], unit:'month', scope:'all', on:true, verified:false, fixed:true},
+    {name:'高齢者施設等感染対策向上加算（Ⅱ）', v:[6,11,16], unit:'month', scope:'all', on:true, verified:false, fixed:true}
+  ];
+  var UNIT_LABEL = {day:'1日ごと', month:'月1回', once:'入所時1回', count:'回数を入力'};
+  var SCOPE_LABEL = {all:'毎月', first:'入所した月のみ'};
+  var STORE_KEY = 'ooyake_ryokin_kasan_v2';
+
+  function $(id){return document.getElementById(id)}
+  function yen(n){return Math.round(n).toLocaleString('ja-JP')}
+  function clone(o){return JSON.parse(JSON.stringify(o))}
+  function uid(){return 'k'+Math.random().toString(36).slice(2,9)}
+  function el(tag,attrs,kids){
+    var e=document.createElement(tag);
+    if(attrs) for(var k in attrs){
+      if(k==='text') e.textContent=attrs[k];
+      else if(k==='checked'||k==='disabled'||k==='hidden') e[k]=!!attrs[k];
+      else e.setAttribute(k,attrs[k]);
+    }
+    (kids||[]).forEach(function(c){ if(c) e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
+    return e;
+  }
+
+  function normalize(list){
+    return list.filter(function(k){return k&&typeof k.name==='string'}).map(function(k){
+      var v=(k.v||[0,0,0]).slice(0,3).map(function(x){x=parseFloat(x);return isFinite(x)&&x>=0?x:0});
+      while(v.length<3) v.push(0);
+      var legacyShoki=(k.shoki===undefined)&&/^初期加算[ⅠⅡ]/.test(k.name); // 以前の版で保存した設定は初期加算を両方オンにする
+      return {id:k.id||uid(), name:k.name, v:v,
+        unit:UNIT_LABEL[k.unit]?k.unit:'month', scope:k.scope==='first'?'first':'all',
+        maxDays:k.maxDays?Math.max(1,Math.min(31,parseInt(k.maxDays,10)||0)):null,
+        on:(legacyShoki||k.fixed)?true:!!k.on, fixed:!!k.fixed, verified:k.verified!==false, qtyLabel:k.qtyLabel||'回',
+        shoki:(k.shoki==='acute'||k.shoki==='other')?k.shoki:(/^初期加算Ⅰ/.test(k.name)?'acute':/^初期加算Ⅱ/.test(k.name)?'other':null)};
+    });
+  }
+
+  // ===== 設定の読み込み・保存 =====
+  var settings;
+  function loadSettings(){
+    try{ var raw=localStorage.getItem(STORE_KEY); if(raw){ var p=JSON.parse(raw); if(Array.isArray(p.kasan)) return normalize(p.kasan); } }catch(e){}
+    return normalize(clone(KASAN_DEFAULT));
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({v:1,kasan:settings})); flash('ksMsg','保存しました'); }
+    catch(e){ flash('ksMsg','この端末では保存できません。書き出しで控えを取ってください'); }
+  }
+  var flashTimers={};
+  function flash(id,text){ $(id).textContent=text; clearTimeout(flashTimers[id]); flashTimers[id]=setTimeout(function(){$(id).textContent=''},3000); }
+  settings=loadSettings();
+
+  // ===== この方の加算の選択（初期設定から作る） =====
+  var caseSel={};
+  function resetCase(){ caseSel={}; settings.forEach(function(k){ caseSel[k.id]={on:k.on, qty:0}; }); }
+  function syncCase(){ settings.forEach(function(k){ if(!caseSel[k.id]) caseSel[k.id]={on:k.on,qty:0}; }); }
+  resetCase();
+
+  // ===== 画面の部品 =====
+  function seg(container, name, items, checked){
+    var c=$(container);
+    items.forEach(function(it){
+      var id=name+'_'+it.id;
+      var i=el('input',{type:'radio',name:name,id:id,value:it.id}); if(it.id===checked) i.checked=true;
+      var l=el('label',{'for':id},[it.label]); if(it.sub) l.appendChild(el('small',{text:it.sub}));
+      c.appendChild(i); c.appendChild(l);
+    });
+  }
+  function val(name){var c=document.querySelector('input[name="'+name+'"]:checked');return c?c.value:null}
+  function num(id){var v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0}
+
+  seg('kaigo','kaigo',[1,2,3,4,5].map(function(n){return{id:String(n),label:'要介護'+n}}),'3');
+  seg('wari','wari',[{id:'0',label:'1割'},{id:'1',label:'2割'},{id:'2',label:'3割'}],'0');
+  seg('room','room',ROOMS,'tashou');
+  seg('dankai','dankai',DANKAI,'none');
+  seg('month','month',[{id:'later',label:'2か月目以降'},{id:'first',label:'入所した月'}],'later');
+  seg('mae','mae',[{id:'other',label:'それ以外',sub:'自宅、回復期病棟、ほかの施設など'},{id:'acute',label:'急性期病院から',sub:'30日以内'}],'other');
+  CAPS.forEach(function(c){$('cap').appendChild(el('option',{value:c.id,text:c.label}))});
+  $('cap').value='h444';
+
+  function priceText(k,w){
+    var p=yen(k.v[w])+'円';
+    if(k.unit==='day') return p+'／日'+(k.maxDays?'（'+k.maxDays+'日まで）':'');
+    if(k.unit==='count') return p+'／'+k.qtyLabel;
+    return p+'／'+UNIT_LABEL[k.unit];
+  }
+
+  function renderKlist(){
+    var w=parseInt(val('wari'),10), first=val('month')==='first', box=$('klist');
+    box.innerHTML='';
+    if(!settings.length){ box.appendChild(el('p',{'class':'empty',text:'加算が登録されていません。下の「加算の初期設定」で追加してください。'})); return; }
+    settings.forEach(function(k){
+      var sel=caseSel[k.id], inactive=(k.scope==='first'&&!first);
+      var auto=!!k.shoki, mae=val('mae');
+      if(auto) inactive = inactive || !k.on || k.shoki!==mae;
+      if(k.fixed) auto=true;
+      var cb=el('input',{type:'checkbox',id:'kc_'+k.id,checked:auto?(!inactive):sel.on,disabled:inactive||auto,'aria-label':k.name});
+      cb.addEventListener('change',function(){sel.on=cb.checked;render();});
+      var info=el('label',{'for':'kc_'+k.id},[k.name, el('span',{'class':'p',text:priceText(k,w)+(k.scope==='first'?'・入所した月のみ':'')+(k.fixed?'・体制加算（全員）':k.shoki?(k.shoki==='acute'?'・急性期病院から30日以内':'・急性期病院から30日以内以外')+'（自動）':'')})]);
+      var right=el('span');
+      if(k.unit==='count'){
+        var q=el('input',{type:'number',min:'0',max:'93',value:String(sel.qty),'aria-label':k.name+'の'+k.qtyLabel+'数'});
+        q.addEventListener('input',function(){var n=parseInt(q.value,10);sel.qty=isFinite(n)&&n>0?n:0; if(sel.qty>0&&!sel.on){sel.on=true;cb.checked=true;} render();});
+        right=el('span',{'class':'qty'},[q,k.qtyLabel]);
+      }
+      box.appendChild(el('div',{'class':'kitem'+(inactive?' off':'')},[cb,info,right]));
+    });
+  }
+
+  // ===== 計算本体 =====
+  function calc(s){
+    var w=s.wari, room=ROOMS.filter(function(r){return r.id===s.room})[0];
+    var base=SERVICE[room.base][s.kaigo][w];
+    var dk=DAILY_KASAN.reduce(function(a,k){return a+k.v[w]},0);
+    var d=s.days, ins={service:base*d, daily:dk*d, items:[], extra:0, fixed:0};
+    settings.forEach(function(k){
+      var sel=caseSel[k.id]; if(!sel) return;
+      if(k.fixed){ /* 体制加算は必ず算定 */ }
+      else if(k.shoki){ if(!k.on||k.shoki!==s.mae) return; } else if(!sel.on) return;
+      if(k.scope==='first'&&!s.first) return;
+      var amt=0, q='';
+      if(k.unit==='day'){ var n=k.maxDays?Math.min(d,k.maxDays):d; amt=k.v[w]*n; q=n+'日'; }
+      else if(k.unit==='count'){ if(!sel.qty) return; amt=k.v[w]*sel.qty; q=sel.qty+k.qtyLabel; }
+      else { amt=k.v[w]; q=UNIT_LABEL[k.unit]; }
+      ins.items.push({name:k.name,q:q,amt:amt,fixed:!!k.fixed}); if(k.fixed) ins.fixed+=amt; ins.extra+=amt;
+    });
+    if(s.other){ ins.items.push({name:'一覧にない加算',q:'',amt:s.other}); ins.extra+=s.other; }
+    var insSub=ins.service+ins.daily+ins.extra;
+    ins.shogu=Math.round(insSub*SHOGU_RATE);
+    ins.total=insSub+ins.shogu;
+    var cap=CAPS.filter(function(c){return c.id===s.cap})[0].amt;
+    ins.capped=Math.min(ins.total,cap); ins.cut=ins.total-ins.capped;
+    var dn=s.dankai;
+    var self={food:FOOD[dn]*d, res:RES[room.base][dn]*d, room:room.fee*d,
+      nichiyo:s.nichiyo?DAY_ITEMS.nichiyo*d:0, goraku:s.goraku?DAY_ITEMS.goraku*d:0,
+      oyatsu:s.oyatsu?DAY_ITEMS.oyatsu*d:0, denki:DAY_ITEMS.denki*s.denki*d, biyo:s.biyo};
+    var selfTotal=0; for(var x in self) selfTotal+=self[x];
+    return {room:room, cap:cap, ins:ins, self:self, selfTotal:selfTotal,
+      total:ins.capped+selfTotal, foodDay:FOOD[dn], resDay:RES[room.base][dn]};
+  }
+
+  function state(){
+    return {kaigo:val('kaigo'), wari:parseInt(val('wari'),10), room:val('room'), dankai:val('dankai'),
+      cap:$('cap').value, first:val('month')==='first', mae:val('mae'), days:Math.min(31,Math.max(1,Math.round(num('days'))||30)),
+      nichiyo:$('nichiyo').checked, goraku:$('goraku').checked, oyatsu:$('oyatsu').checked,
+      denki:Math.round(num('denki')), biyo:num('biyo'), other:num('other')};
+  }
+  function row(label,amt,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+label+'</td><td class="n">'+amt+'</td></tr>'}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  function render(){
+    var w=parseInt(val('wari'),10);
+    document.querySelectorAll('input[name="dankai"]').forEach(function(i){i.disabled=(w>0&&i.value!=='none')});
+    if(w>0 && val('dankai')!=='none'){ $('dankai_none').checked=true; }
+
+    var s=state(), r=calc(s), W=['1割','2割','3割'][s.wari];
+    $('maeBox').hidden=!s.first;
+    $('totalLabel').textContent='1か月の目安（'+s.days+'日'+(s.first?'・入所した月':'')+'）';
+    $('total').textContent=yen(r.total);
+    $('perDay').textContent='1日あたり約'+yen(r.total/s.days)+'円　｜　要介護'+s.kaigo+'・'+W+'・'+r.room.label;
+    $('saving').innerHTML=r.ins.cut>0?'<span class="saving">高額介護サービス費の上限で '+yen(r.ins.cut)+'円 軽くなっています</span>':'';
+
+    var ins=r.ins, se=r.self, h='';
+    h+='<tr class="grp"><td colspan="2">介護保険の自己負担（'+W+'）</td></tr>';
+    h+=row('施設サービス費（1日'+yen(SERVICE[r.room.base][s.kaigo][s.wari])+'円 × '+s.days+'日）',yen(ins.service));
+    h+=row('体制加算（全員に付く加算）',yen(ins.daily+ins.fixed));
+    h+=row('夜勤職員配置・在宅復帰支援・サービス提供体制（'+s.days+'日）',yen(ins.daily),'ksub');
+    ins.items.filter(function(it){return it.fixed}).forEach(function(it){ h+=row(esc(it.name)+(it.q?'（'+esc(it.q)+'）':''),yen(it.amt),'ksub'); });
+    var indiv=ins.items.filter(function(it){return !it.fixed});
+    if(indiv.length){
+      h+=row('個別の加算',yen(ins.extra-ins.fixed));
+      indiv.forEach(function(it){ h+=row(esc(it.name)+(it.q?'（'+esc(it.q)+'）':''),yen(it.amt),'ksub'); });
+    }
+    h+=row('介護職員等処遇改善加算（9.7%）',yen(ins.shogu));
+    if(ins.cut>0){
+      h+=row('小計（上限をかける前）',yen(ins.total));
+      h+=row('高額介護サービス費で軽くなる額（上限'+yen(r.cap)+'円）','−'+yen(ins.cut),'cut');
+    }
+    h+=row('<strong>介護保険の自己負担</strong>','<strong>'+yen(ins.capped)+'</strong>');
+    h+='<tr class="grp"><td colspan="2">介護保険の対象外（全額自己負担）</td></tr>';
+    h+=row('食費（1日'+yen(r.foodDay)+'円）',yen(se.food));
+    h+=row('居住費（1日'+yen(r.resDay)+'円）',yen(se.res));
+    if(se.room) h+=row('特別な室料（1日'+yen(r.room.fee)+'円）',yen(se.room));
+    if(se.nichiyo) h+=row('日用品費',yen(se.nichiyo));
+    if(se.goraku) h+=row('娯楽教養費',yen(se.goraku));
+    if(se.oyatsu) h+=row('おやつ',yen(se.oyatsu));
+    if(se.denki) h+=row('電気使用料（'+s.denki+'器具）',yen(se.denki));
+    if(se.biyo) h+=row('理美容代',yen(se.biyo));
+    h+=row('合計',yen(r.total),'sum');
+    $('breakdown').innerHTML=h;
+
+    var c='<tr><th>お部屋</th><th class="n">1か月の目安</th><th class="n">多床室との差</th></tr>';
+    var baseTotal=calc(Object.assign({},s,{room:'tashou'})).total;
+    ROOMS.forEach(function(rm){
+      var t=calc(Object.assign({},s,{room:rm.id})).total, diff=t-baseTotal;
+      c+='<tr'+(rm.id===s.room?' class="cur"':'')+'><td>'+rm.label+'</td><td class="n">'+yen(t)+'円</td><td class="n">'+(diff?'+'+yen(diff)+'円':'―')+'</td></tr>';
+    });
+    $('compare').innerHTML=c;
+
+    var dn=DANKAI.filter(function(x){return x.id===s.dankai})[0].label;
+    var kNames=ins.items.filter(function(it){return !it.fixed}).map(function(it){return it.name}).join('、');
+    $('copyText').value=
+      '【おおやけの里 入所料金の目安】\n'+
+      '条件：要介護'+s.kaigo+'／'+W+'負担／'+r.room.label+'／負担限度額：'+dn+'／高額介護サービス費の上限：'+yen(r.cap)+'円／'+s.days+'日'+(s.first?'（入所した月・入所前：'+(s.mae==='acute'?'急性期病院から30日以内':'急性期病院から30日以内以外')+'）':'')+'\n'+
+      '介護保険の自己負担：'+yen(ins.capped)+'円'+(ins.cut>0?'（上限により'+yen(ins.cut)+'円軽減・受領委任払いの場合）':'')+'\n'+
+      '（体制加算・処遇改善加算を含む）\n'+(kNames?'個別の加算：'+kNames+'\n':'')+
+      '食費：'+yen(se.food)+'円／居住費：'+yen(se.res)+'円'+(se.room?'／特別な室料：'+yen(se.room)+'円':'')+'\n'+
+      'その他（日用品・娯楽教養・おやつ・電気・理美容）：'+yen(se.nichiyo+se.goraku+se.oyatsu+se.denki+se.biyo)+'円\n'+
+      '合計の目安：'+yen(r.total)+'円（1日あたり約'+yen(r.total/s.days)+'円）\n'+
+      '※概算です。外泊・入院・薬・退所時の加算などは含みません。料金表（2026年8月1日）にもとづく計算です。';
+    renderPaper(s,r,W,dn);
+  }
+
+  // ===== ご家族向け印刷用紙 =====
+  var LOGO='<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#0099CC"/><path d="M16 6 L25 26 H21 L19.2 21.6 H12.8 L11 26 H7 Z M14 18.4 H18 L16 13.4 Z" fill="#fff"/></svg>';
+  function today(){var d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日'}
+  function prow(l,v,c){return '<tr'+(c?' class="'+c+'"':'')+'><td>'+l+'</td><td class="n">'+v+'</td></tr>'}
+  function renderPaper(s,r,W,dn){
+    var ins=r.ins, se=r.self;
+    var atena=$('pAtena').value.trim(), tanto=$('pTanto').value.trim(), tel=$('pTel').value.trim();
+    var mae=s.first?(s.mae==='acute'?'急性期病院から30日以内':'自宅・ほかの病院や施設など'):'';
+    var h='';
+    h+='<div class="ph">'+LOGO+'<div class="org">一般社団法人愛生会<b>介護老人保健施設 おおやけの里</b></div><div class="sl">人々を幸せに、社会をもっと豊かに、<br>進化・創造・オーバーラップ</div></div>';
+    h+='<h1>ご利用料金の目安（1か月）</h1>';
+    h+='<div class="meta"><div class="atena"><span>'+(atena?esc(atena):'')+'</span><span>様</span></div><div class="date">作成日　'+today()+'</div></div>';
+    h+='<table class="cond"><tr><th>要介護度</th><td>要介護'+s.kaigo+'</td><th>介護保険の負担割合</th><td>'+W+'</td></tr>'+
+       '<tr><th>お部屋</th><td>'+r.room.label+'</td><th>負担限度額認定証</th><td>'+dn+'</td></tr>'+
+       '<tr><th>計算した日数</th><td>'+s.days+'日'+(s.first?'（入所した月）':'')+'</td><th>介護保険の自己負担の上限</th><td>'+yen(r.cap)+'円</td></tr>'+
+       (s.first?'<tr><th>入所前の場所</th><td colspan="3">'+mae+'</td></tr>':'')+'</table>';
+    h+='<div class="bigtotal"><div class="k">1か月のお支払いの目安<small>1日あたり 約'+yen(r.total/s.days)+'円</small></div><div class="v">'+yen(r.total)+'<small>円</small></div></div>';
+
+    var t1='<table>';
+    t1+='<tr class="g"><td colspan="2">介護保険の自己負担（'+W+'）</td></tr>';
+    t1+=prow('施設サービス費',yen(ins.service));
+    t1+=prow('加算',yen(ins.daily+ins.extra));
+    t1+=prow('介護職員等処遇改善加算',yen(ins.shogu));
+    if(ins.cut>0){ t1+=prow('上限で軽くなる額','−'+yen(ins.cut),'cut'); }
+    t1+=prow('小計',yen(ins.capped),'c');
+    t1+='</table>';
+    var t2='<table>';
+    t2+='<tr class="g"><td colspan="2">介護保険の対象外</td></tr>';
+    t2+=prow('食費（1日'+yen(r.foodDay)+'円）',yen(se.food));
+    t2+=prow('居住費（1日'+yen(r.resDay)+'円）',yen(se.res));
+    if(se.room) t2+=prow('特別な室料（1日'+yen(r.room.fee)+'円）',yen(se.room));
+    if(se.nichiyo) t2+=prow('日用品費（1日158円）',yen(se.nichiyo));
+    if(se.goraku) t2+=prow('娯楽教養費（1日158円）',yen(se.goraku));
+    if(se.oyatsu) t2+=prow('おやつ（1日150円）',yen(se.oyatsu));
+    if(se.denki) t2+=prow('電気使用料（'+s.denki+'器具）',yen(se.denki));
+    if(se.biyo) t2+=prow('理美容代',yen(se.biyo));
+    t2+=prow('小計',yen(r.selfTotal),'c');
+    t2+='</table>';
+    h+='<h3>内訳</h3><div class="pcols"><div>'+t1+'</div><div>'+t2+'</div></div>';
+    var names=ins.items.map(function(it){return it.name});
+    h+='<p class="knote">加算には、夜勤職員配置加算・在宅復帰・在宅療養支援機能加算・サービス提供体制強化加算'+(names.length?'・'+esc(names.join('・')):'')+'が含まれます。</p>';
+
+    if($('pCompare').checked){
+      var base=calc(Object.assign({},s,{room:'tashou'})).total;
+      var c='<table><tr><th>お部屋</th><th style="text-align:right">1か月の目安</th><th style="text-align:right">多床室との差</th></tr>';
+      ROOMS.forEach(function(rm){
+        var t=calc(Object.assign({},s,{room:rm.id})).total, d=t-base;
+        c+='<tr'+(rm.id===s.room?' class="sel"':'')+'><td>'+rm.label+(rm.id===s.room?'（この表の計算）':'')+'</td><td class="n">'+yen(t)+'円</td><td class="n">'+(d?'+'+yen(d)+'円':'―')+'</td></tr>';
+      });
+      h+='<h3>お部屋ごとの比較（同じ条件で計算）</h3>'+c+'</table>';
+    }
+
+    h+='<h3>ご確認ください</h3><ul>'+
+      '<li>この金額は目安です。実際のご請求額とは差が出ることがあります。</li>'+
+      '<li>介護保険の自己負担には、所得に応じた1か月の上限があります（高額介護サービス費）。京都市に「受領委任払い」を申請すると、施設へのお支払いは上限額までになります。申請しない場合は、いったん全額をお支払いいただき、後日京都市から払い戻されます。</li>'+
+      '<li>食費・居住費は、京都市の「負担限度額認定証」をお持ちの場合に軽くなります。認定証には有効期限があります。</li>'+
+      '<li>外泊・入院された日の費用、お薬の自己負担、退所時の加算などは含んでいません。</li>'+
+      '</ul>';
+    h+='<div class="pf"><div>お問い合わせ　介護老人保健施設おおやけの里　支援相談係</div><div>担当　'+(tanto?esc(tanto):'<span class="blank"></span>')+'　　電話　'+(tel?esc(tel):'<span class="blank"></span>')+'</div></div>';
+    h+='<div class="src">利用料金表（2026年8月1日）にもとづいて計算しています。</div>';
+    $('paper').innerHTML=h;
+  }
+
+  var P_KEY='ooyake_ryokin_print_v1';
+  try{ var pp=JSON.parse(localStorage.getItem(P_KEY)||'{}'); if(pp.tanto) $('pTanto').value=pp.tanto; if(pp.tel) $('pTel').value=pp.tel; }catch(e){}
+  ['pAtena','pTanto','pTel'].forEach(function(id){ $(id).addEventListener('input',function(){
+    if(id!=='pAtena'){ try{ localStorage.setItem(P_KEY,JSON.stringify({tanto:$('pTanto').value,tel:$('pTel').value})); }catch(e){} }
+    render();
+  }); });
+  $('pCompare').addEventListener('change',render);
+  $('bwPrev').addEventListener('change',function(){ $('paperbox').classList.toggle('bw',$('bwPrev').checked); });
+  $('printBtn').addEventListener('click',function(){ try{ window.print(); }catch(e){} });
+
+  // ===== 職員用：加算の初期設定の編集 =====
+  function renderSettings(){
+    var box=$('ks'); box.innerHTML='';
+    settings.forEach(function(k,idx){
+      var p='ks'+k.id+'_';
+      var name=el('input',{type:'text',id:p+'name',value:k.name,'aria-label':'加算の名前'});
+      name.addEventListener('change',function(){k.name=name.value.trim()||'名前のない加算';changed();});
+      var tag=k.verified?null:el('span',{'class':'tag chkme',text:'料金表と照合'});
+      var del=el('button',{type:'button','class':'btn danger mini',text:'削除'});
+      del.addEventListener('click',function(){
+        if(del.dataset.armed){ settings.splice(idx,1); changed(true); return; }
+        del.dataset.armed='1'; del.textContent='もう一度押すと削除';
+        setTimeout(function(){ if(del.isConnected){ del.textContent='削除'; delete del.dataset.armed; } },4000);
+      });
+      var nums=[0,1,2].map(function(i){
+        var inp=el('input',{type:'number',min:'0',id:p+'v'+i,value:String(k.v[i])});
+        inp.addEventListener('change',function(){var n=parseFloat(inp.value);k.v[i]=isFinite(n)&&n>=0?n:0;changed();});
+        return el('label',{'class':'field'},[['1割','2割','3割'][i]+'（円）',inp]);
+      });
+      var unit=el('select',{id:p+'unit'});
+      Object.keys(UNIT_LABEL).forEach(function(u){var o=el('option',{value:u,text:UNIT_LABEL[u]}); if(u===k.unit)o.selected=true; unit.appendChild(o);});
+      unit.addEventListener('change',function(){k.unit=unit.value; if(k.unit==='once') k.scope='first'; changed(true);});
+      var scope=el('select',{id:p+'scope'});
+      Object.keys(SCOPE_LABEL).forEach(function(u){var o=el('option',{value:u,text:SCOPE_LABEL[u]}); if(u===k.scope)o.selected=true; scope.appendChild(o);});
+      scope.addEventListener('change',function(){k.scope=scope.value;changed();});
+      var md=null;
+      if(k.unit==='day'){
+        var mdi=el('input',{type:'number',min:'0',max:'31',id:p+'md',value:k.maxDays?String(k.maxDays):'','placeholder':'なし'});
+        mdi.addEventListener('change',function(){var n=parseInt(mdi.value,10);k.maxDays=isFinite(n)&&n>0?Math.min(31,n):null;changed();});
+        md=el('label',{'class':'field md'},['上限日数',mdi]);
+      }
+      var ql=null;
+      if(k.unit==='count'){
+        var qli=el('select',{id:p+'ql'});
+        ['回','日','食'].forEach(function(u){var o=el('option',{value:u,text:u}); if(u===k.qtyLabel)o.selected=true; qli.appendChild(o);});
+        qli.addEventListener('change',function(){k.qtyLabel=qli.value;changed();});
+        ql=el('label',{'class':'field'},['数える単位',qli]);
+      }
+      var on=el('input',{type:'checkbox',id:p+'on',checked:k.on});
+      var autoNote=k.shoki?el('span',{'class':'p',style:'font-size:12px;color:var(--muted)',text:k.shoki==='acute'?'入所前が「急性期病院から30日以内」のとき自動で付きます':'入所前が「それ以外」のとき自動で付きます'}):null;
+      on.addEventListener('change',function(){k.on=on.checked; if(caseSel[k.id]) caseSel[k.id].on=k.on; changed();});
+      var ver=null;
+      if(!k.verified){
+        var vi=el('input',{type:'checkbox',id:p+'ver'});
+        vi.addEventListener('change',function(){if(vi.checked){k.verified=true;changed(true);}});
+        ver=el('label',{'class':'chk',style:'font-size:13px'},[vi,'照合済み']);
+      }
+      box.appendChild(el('div',{'class':'ks-item'},[
+        el('div',{'class':'ks-top'},[name,tag,del]),
+        el('div',{'class':'ks-grid'},nums.concat([
+          el('label',{'class':'field'},['数え方',unit]),
+          el('label',{'class':'field'},['対象の月',scope]),
+          md, ql,
+          el('label',{'class':'chk',style:'font-size:13px'},[on,k.shoki?'算定する':'最初からチェックを入れる']),
+          (function(){var fx=el('input',{type:'checkbox',id:p+'fx',checked:k.fixed});
+            fx.addEventListener('change',function(){k.fixed=fx.checked; if(k.fixed){k.on=true;} changed(true);});
+            return el('label',{'class':'chk',style:'font-size:13px'},[fx,'体制加算（全員に必ず付く）']);})(),
+          ver, autoNote
+        ]))
+      ]));
+    });
+  }
+  // structural=true のときは設定画面も作り直す
+  function changed(structural){
+    saveSettings();
+    // 初期でオンの変更は、この方の選択にも反映（まだ個別に変えていない項目として扱う）
+    var keep={}; settings.forEach(function(k){ keep[k.id]=true; });
+    for(var id in caseSel) if(!keep[id]) delete caseSel[id];
+    syncCase();
+    if(structural) renderSettings();
+    renderKlist(); render();
+  }
+
+  $('ksAdd').addEventListener('click',function(){
+    settings.push({id:uid(),name:'新しい加算',v:[0,0,0],unit:'month',scope:'all',maxDays:null,on:false,verified:true,qtyLabel:'回'});
+    changed(true);
+    var last=$('ks').lastElementChild; if(last){ var inp=last.querySelector('input[type=text]'); if(inp){inp.focus();inp.select();} }
+  });
+  $('ksReset').addEventListener('click',function(){ $('ksResetConfirm').hidden=false; $('ksReset').hidden=true; });
+  $('ksResetNo').addEventListener('click',function(){ $('ksResetConfirm').hidden=true; $('ksReset').hidden=false; });
+  $('ksResetYes').addEventListener('click',function(){
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    settings=normalize(clone(KASAN_DEFAULT)); resetCase();
+    $('ksResetConfirm').hidden=true; $('ksReset').hidden=false;
+    renderSettings(); renderKlist(); render(); flash('ksMsg','最初の設定に戻しました');
+  });
+  $('ioExport').addEventListener('click',function(){
+    var t=$('ioText'); t.value=JSON.stringify({v:1,kasan:settings.map(function(k){var c=clone(k);delete c.id;return c;})});
+    try{ navigator.clipboard.writeText(t.value).then(function(){flash('ioMsg','コピーしました');},function(){t.focus();t.select();flash('ioMsg','文字を選んだので、コピーしてください');}); }
+    catch(e){ t.focus(); t.select(); flash('ioMsg','文字を選んだので、コピーしてください'); }
+  });
+  $('ioImport').addEventListener('click',function(){
+    try{
+      var p=JSON.parse($('ioText').value);
+      if(!p||!Array.isArray(p.kasan)) throw new Error();
+      settings=normalize(p.kasan); resetCase(); saveSettings();
+      renderSettings(); renderKlist(); render(); flash('ioMsg','読み込みました（'+settings.length+'件）');
+    }catch(e){ flash('ioMsg','読み込めませんでした。「書き出し」でコピーした文字をそのまま貼り付けてください'); }
+  });
+  $('caseReset').addEventListener('click',function(){ resetCase(); $('other').value=0; renderKlist(); render(); });
+
+  // 認定証の段階に合わせて高額介護の区分を自動で切り替え
+  document.querySelector('main').addEventListener('change',function(e){
+    if(e.target.name==='dankai'){
+      var d=e.target.value;
+      $('cap').value=(d==='d1'||d==='d2')?'p15':(d==='d3a'||d==='d3b')?'h246':'h444';
+    }
+    if(e.target.name==='wari'||e.target.name==='month'||e.target.name==='mae') renderKlist();
+    render();
+  });
+  ['days','denki','biyo','other'].forEach(function(id){ $(id).addEventListener('input',render); });
+
+  $('copyBtn').addEventListener('click',function(){
+    var t=$('copyText');
+    function fallback(){t.hidden=false;t.focus();t.select();$('copyMsg').textContent='下の文章を選んだので、コピーしてください';}
+    try{ navigator.clipboard.writeText(t.value).then(function(){flash('copyMsg','コピーしました');},fallback); }catch(err){fallback();}
+  });
+
+  renderSettings(); renderKlist(); render();
+})();
+</script>
